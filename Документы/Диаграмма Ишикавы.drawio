@@ -1,0 +1,103 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0" version="29.5.2">
+  <diagram name="Страница-1" id="PHMrMZnM8mKCMiEfKJRi">
+    <mxGraphModel dx="1224" dy="1180" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-1" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" target="4PQy23OFJeIU4Ghqk0iR-2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="80" y="440" as="sourcePoint" />
+            <mxPoint x="560" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 10px;&quot;&gt;Высокая трудоемкость по работе с матрицами доступов&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="640" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Методы" vertex="1">
+          <mxGeometry height="40" width="80" x="400" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Машины" vertex="1">
+          <mxGeometry height="40" width="80" x="240" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;Среда&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="80" x="80" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Материал" vertex="1">
+          <mxGeometry height="40" width="80" x="320" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Человек" vertex="1">
+          <mxGeometry height="40" width="80" x="160" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-8" edge="1" parent="1" source="4PQy23OFJeIU4Ghqk0iR-6" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=1;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="490" y="400" as="sourcePoint" />
+            <mxPoint x="520" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-9" edge="1" parent="1" source="4PQy23OFJeIU4Ghqk0iR-3" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="470" y="490" as="sourcePoint" />
+            <mxPoint x="600" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-10" edge="1" parent="1" source="4PQy23OFJeIU4Ghqk0iR-4" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="350" y="490" as="sourcePoint" />
+            <mxPoint x="440" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-11" edge="1" parent="1" source="4PQy23OFJeIU4Ghqk0iR-7" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=1;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="250" y="380" as="sourcePoint" />
+            <mxPoint x="360" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-14" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="160" y="560" as="sourcePoint" />
+            <mxPoint x="280" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Формальный подход руководителей к проверке из-за нехватки времени&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="220" x="110" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-18" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;div&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Усталость и снижение внимание сотрудника службы информационной безопасности из-за монотонной работы&lt;/font&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="230" x="20" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-19" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;div&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Большая когнитивная нагрузка при работе с запросами на права доступа, матрицами доступов и отчетами&amp;nbsp;&lt;/font&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="230" x="60" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-20" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;В таблицах нет контроля версий данных&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="100" x="310" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-21" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;В таблицах легко случайно изменить данные&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="110" x="260" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-22" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Нет платформы для автоматизации контроля&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="110" x="220" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-23" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Отсутствует автоматическое определение ресурсов&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="100" x="450" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-24" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Процедура внесения изменений не регламентирована&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="100" x="410" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-25" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Возможные ошибки хранимой информации в матрицах доступов&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="100" x="330" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-26" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Захламленность данных (неиспользуемые ресурсы, старые группы доступов)&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="100" x="370" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-27" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Высокие регуляторные требования&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="100" x="150" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-28" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Территориальная распределенность&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="100" x="110" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="4PQy23OFJeIU4Ghqk0iR-29" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;line-height: 70%;&quot;&gt;&lt;font style=&quot;font-size: 8px; line-height: 70%;&quot;&gt;Большое количество работы и задач у сотрудников&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="100" x="70" y="520" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
