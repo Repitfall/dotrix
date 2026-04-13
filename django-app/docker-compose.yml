@@ -1,0 +1,27 @@
+services:
+  dotrix_django:
+    build: .
+    container_name: dotrix_django
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - dotrix_postgres
+    restart: unless-stopped
+
+  dotrix_postgres:
+    image: postgres:17
+    container_name: dotrix_postgres
+    ports:
+      - "10002:5432"
+    env_file:
+      - .env
+    volumes:
+      - dotrix_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  dotrix_postgres_data:
