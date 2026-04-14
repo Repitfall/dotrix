@@ -1,25 +1,24 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser
+from django.contrib.auth.models import AbstractUser
 
 
-class User(AbstractBaseUser):
-    login = models.CharField(
+class User(AbstractUser):
+    username = models.CharField(
         verbose_name="Логин", max_length=64, unique=True)
     last_name = models.CharField(
         verbose_name="Фамилия", max_length=32)
     first_name = models.CharField(
         verbose_name="Имя", max_length=32)
     patronymic = models.CharField(
-        verbose_name="Отчество", max_length=32)
+        verbose_name="Отчество", max_length=32, blank=True)
     post = models.CharField(
         verbose_name="Должность", max_length=128)
     created_at = models.DateTimeField(
         verbose_name="Дата создания", auto_now_add=True)
 
     auth_offline = models.BooleanField(
-        verbose_name="Автономная авторизация")
+        verbose_name="Автономная авторизация", default=True)
 
-    USERNAME_FIELD = 'login'
     REQUIRED_FIELDS = []
 
     class Meta:

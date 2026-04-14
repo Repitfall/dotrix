@@ -9,14 +9,14 @@ router.register(r'', StatusViewSet, basename='status')
 urlpatterns = [
     path('', include(router.urls)),
 
-    path('schema/yaml/',
+    path('schema/',
          SpectacularAPIView.as_view(
              custom_settings={'TITLE': 'Dotrix API',
-                              'DESCRIPTION': 'Документация по API для Dotrix', 'VERSION': '1.0'},
+                              'DESCRIPTION': 'Документация по API Dotrix', 'VERSION': '1.0'},
              patterns=[path('api/v1/', include('api.v1.urls'))],
          ), name='schema-v1'),
-    path('schema/swagger/',
+    path('swagger/',
          SpectacularSwaggerView.as_view(url_name='schema-v1'), name='swagger'),
-    path('schema/redoc/',
+    path('redoc/',
          SpectacularRedocView.as_view(url_name='schema-v1'), name='redoc'),
 ]
