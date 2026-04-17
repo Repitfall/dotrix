@@ -1,5 +1,70 @@
 {% extends "base.html" %}
 
 {% block main %}
-    <h1>Тестовая страница авторизации</h1>
+    <div class="d-flex align-items-center h-100">
+        <div class="w-50 mx-auto my-5 p-3 border">
+            <form id="loginForm">
+                <h1 class="h3 mb-3 text-center">Вход в аккаунт</h1>
+
+                <div class="form-floating my-4">
+                    <input type="text" class="form-control" name="login" id="login" placeholder="Логин" required>
+                    <label for="login">Логин</label>
+                    <div class="invalid-feedback">
+                        Пожалуйста, введите имя пользователя
+                    </div>
+                </div>
+
+                <div class="form-floating my-4">
+                    <input type="password" class="form-control" name="password" id="password" placeholder="Пароль" required>
+                    <label for="password">Пароль</label>
+                    <div class="invalid-feedback">
+                        Пожалуйста, введите пароль
+                    </div>
+                </div>
+
+                <button class="btn btn-primary w-100 my-3" type="submit">Авторизоваться</button>
+
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    const form = document.getElementById('loginForm');
+    
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const login = document.getElementById('login').value;
+        const password = document.getElementById('password').value;
+
+        fetch('http://spaceland.su/api/v0/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                login: login,
+                password: password
+            })
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return {
+                    status: response.status,
+                    ok: response.ok,
+                    data: data
+                }
+            })
+        })
+        .then(function(result) {
+            const {status, ok, data} = result
+
+            if (ok && status == 200) {
+                console.log('Успешный вход')
+            } else if (status == 401) {
+                console.log('Неверные данные')
+            }
+        });
+    });
 {% endblock %}

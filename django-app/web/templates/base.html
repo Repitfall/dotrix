@@ -6,9 +6,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+        <style>{% block style %}{% endblock %}</style>
         <title>{% block title %}Страница{% endblock %} | Дотрикс</title>
     </head>
-    <body>
+    <body class="min-vh-100">
         <header class="container border-bottom">
             <p>Тестовая шапка сайта</p>
         </header>
@@ -16,6 +17,7 @@
             {% block main %}
             {% endblock %}
             <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+            <script>{% block script %}{% endblock %}</script>
         </main>
     </body>
 </html>

@@ -1,12 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 
 
 def index(request):
     """Главная страница"""
-    if request.user.is_authenticated:
-        return render(request, "index.html")
-    else:
-        return redirect('login')
+    return render(request, "index.html")
 
 
 def user_login(request):
