@@ -7,10 +7,18 @@ from .views import (
     ProfileView,
     UserView,
     UserListView,
+
     AccessRegistryListView,
+    AccessRegistryView,
+    AccessRegistryRestoreView,
+
     AccessSectionListView,
+    AccessSectionView,
+
     AccessNodeListView,
+
     AccessObjectListView,
+
     AccessTypeListView
 )
 
@@ -24,9 +32,15 @@ urlpatterns = [
 
     path('access_registries/',
          AccessRegistryListView.as_view(), name='registies'),
+    path('access_registries/<int:id>',
+         AccessRegistryView.as_view(), name='registry'),
+    path('access_registries/<int:id>/restore',
+         AccessRegistryRestoreView.as_view(), name='registry_restore'),
 
     path('access_sections/',
          AccessSectionListView.as_view(), name='sections'),
+    path('access_sections/<int:id>',
+         AccessSectionView.as_view(), name='section'),
 
     path('access_nodes/',
          AccessNodeListView.as_view(), name='nodes'),
@@ -39,8 +53,8 @@ urlpatterns = [
 
     path('schema/',
          SpectacularAPIView.as_view(
-             custom_settings={'TITLE': 'Dotrix API',
-                              'DESCRIPTION': 'Документация по тестовому API Dotrix', 'VERSION': '0.0'},
+             custom_settings={'TITLE': 'Dotrix API (LEGACY)',
+                              'DESCRIPTION': 'Документация по тестовому API Dotrix, является эксприментальным и не подходит для работы', 'VERSION': '0.0'},
              patterns=[path('api/v0/', include('api.v0.urls'))],
          ), name='schema-v0'),
     path('swagger/',

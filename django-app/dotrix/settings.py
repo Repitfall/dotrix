@@ -33,6 +33,12 @@ ALLOWED_HOSTS = [host.strip() for host in os.getenv(
 CORS_ALLOWED_ORIGINS = [host.strip() for host in os.getenv(
     'DJANGO_ALLOWED_ORIGINS', '').split(',')]
 
+CSRF_TRUSTED_ORIGINS = [host.strip() for host in os.getenv(
+    'DJANGO_ALLOWED_ORIGINS', '').split(',')]
+
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
+
 
 # Application definition
 
@@ -44,8 +50,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'django_filters',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'drf_spectacular',
 
@@ -151,10 +159,17 @@ REST_FRAMEWORK = {
         'api.authentication.CookieJWTAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema'
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'SEARCH_PARAM': 'search',
+    'ORDERING_PARAM': 'ordering',
 }
 
 SIMPLE_JWT = {
