@@ -21,13 +21,6 @@ class AccessRegistryModelSerializer(serializers.ModelSerializer):
 
         return representation
 
-    def validate_name(self, value):
-        instance_id = self.instance.id if hasattr(self, 'instance') else None
-        if AccessRegistry.objects.exclude(id=instance_id).filter(name=value).exists():
-            raise serializers.ValidationError(
-                "Реестр с таким названием уже существует")
-        return value
-
 
 class AccessRegistryCreateInputSerializer(serializers.Serializer):
     """Сериализатор создания реестра доступа"""

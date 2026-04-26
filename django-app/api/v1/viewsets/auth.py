@@ -191,7 +191,8 @@ class ChangePasswordView(APIView):
 
         user, error = AuthService.authenticate_user(
             login=input_serializer.validated_data['login'],
-            password=input_serializer.validated_data['old_password']
+            password=input_serializer.validated_data['old_password'],
+            change_password=True
         )
 
         if error:

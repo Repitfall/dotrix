@@ -9,7 +9,7 @@ class AuthService:
     """Сервис для работы с авторизацией"""
 
     @staticmethod
-    def authenticate_user(login: str, password: str) -> tuple:
+    def authenticate_user(login: str, password: str, change_password: bool = False) -> tuple:
         """Аутентифицирует пользователя"""
 
         user = authenticate(username=login, password=password)
@@ -20,7 +20,7 @@ class AuthService:
         if not user.is_active:
             return None, "Учетная запись отключена. Обратитесь к администратору."
 
-        if user.reset_password:
+        if user.reset_password and not change_password:
             return None, "Учетная запись отключена. Сбросьте свой пароль для активации."
 
         return user, None

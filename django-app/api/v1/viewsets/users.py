@@ -3,7 +3,7 @@ from django_filters import rest_framework as filters
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.pagination import PageNumberPagination
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 
@@ -44,7 +44,7 @@ class UserViewSet(viewsets.GenericViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'restore', 'reset_password']:
             return [IsAuthenticated(), IsAdmin()]
         else:
-            return [IsAuthenticated(), IsAdminOrReadOnly()]
+            return [AllowAny()]
 
     @extend_schema(
         summary="Список пользователей",

@@ -7,6 +7,8 @@ from api.v1.viewsets.users import UserViewSet
 from api.v1.viewsets.access_registry import AccessRegistryViewSet
 from api.v1.viewsets.access_group import AccessGroupViewSet
 from api.v1.viewsets.access_section import AccessSectionViewSet
+from api.v1.viewsets.access_node import AccessNodeViewSet
+from api.v1.viewsets.access_object import AccessObjectViewSet
 
 router = DefaultRouter()
 router.register(
@@ -28,6 +30,16 @@ router.register(
     'sections',
     AccessSectionViewSet,
     basename='section'
+)
+router.register(
+    'nodes',
+    AccessNodeViewSet,
+    basename='node'
+)
+router.register(
+    'objects',
+    AccessObjectViewSet,
+    basename='object'
 )
 
 urlpatterns = [

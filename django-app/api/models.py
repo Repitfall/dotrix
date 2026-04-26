@@ -261,6 +261,17 @@ class AccessNode(models.Model):
         null=True
     )
 
+    ip_validated = models.BooleanField(
+        verbose_name="IP валидирован",
+        default=False
+    )
+    last_validation_error = models.CharField(
+        verbose_name="Ошибка валидации",
+        max_length=256,
+        blank=True,
+        null=True
+    )
+
     is_deleted = models.BooleanField(
         default=False
     )
@@ -270,6 +281,11 @@ class AccessNode(models.Model):
         verbose_name_plural = "Узлы доступа"
         ordering = ['section', 'name']
         unique_together = [['section', 'name']]
+        indexes = [
+            models.Index(fields=['section', 'name']),
+            models.Index(fields=['is_deleted']),
+            models.Index(fields=['ip_validated']),
+        ]
 
     def __str__(self):
         return f"{self.section.name} | {self.name}"
