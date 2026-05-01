@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinLengthValidator
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 
 class User(AbstractUser):
@@ -296,8 +298,8 @@ class AccessObject(models.Model):
 
     node = models.ForeignKey(
         AccessNode,
-        verbose_name="Раздел доступа",
-        related_name='objects',
+        verbose_name="Узел доступа",
+        related_name='access_objects',
         on_delete=models.PROTECT
     )
     name = models.CharField(
@@ -314,7 +316,9 @@ class AccessObject(models.Model):
         max_length=256
     )
 
-    is_deleted = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(
+        default=False
+    )
 
     class Meta:
         verbose_name = "Объект доступа"
@@ -326,18 +330,13 @@ class AccessObject(models.Model):
         return f"{self.node.name} | {self.name}"
 
 
-class AccessType(models.Model):
-    """Модель типа доступа (пятый уровень иерархии матрицы доступов)"""
+class AccessTypeTemplate(models.Model):
+    """Модели шаблонов типа доступа"""
 
-    object = models.ForeignKey(
-        AccessObject,
-        verbose_name="Раздел доступа",
-        related_name='types',
-        on_delete=models.PROTECT
-    )
     name = models.CharField(
-        verbose_name="Название",
-        max_length=64
+        verbose_name="Название шаблона",
+        max_length=64,
+        unique=True
     )
     description = models.TextField(
         verbose_name="Описание",
@@ -350,10 +349,150 @@ class AccessType(models.Model):
     )
 
     class Meta:
-        verbose_name = "Тип доступа"
-        verbose_name_plural = "Тип доступа"
-        ordering = ['object', 'name']
-        unique_together = [['object', 'name']]
+        verbose_name = "Шаблон типа доступа"
+        verbose_name_plural = "Шаблоны типов доступа"
+        ordering = ['name']
 
     def __str__(self):
-        return f"{self.object.node.name} | {self.object.name} | {self.name}"
+        return self.name
+
+
+class AccessType(models.Model):
+    """Модель типа доступа (пятый уровень иерархии матрицы доступов)"""
+
+    object = models.ForeignKey(
+        AccessObject,
+        verbose_name="Объект доступа",
+        related_name='types',
+        on_delete=models.PROTECT
+    )
+    template = models.ForeignKey(
+        AccessTypeTemplate,
+        verbose_name="Шаблон типа доступа",
+        related_name='types',
+        on_delete=models.PROTECT
+    )
+
+    is_deleted = models.BooleanField(
+        default=False
+    )
+
+    class Meta:
+        verbose_name = "Тип доступа"
+        verbose_name_plural = "Типы доступа"
+        unique_together = [['object', 'template']]
+        ordering = ['object', 'template__name']
+
+    def __str__(self):
+        return f"{self.object} | {self.template.name}"
+
+
+class AccessRight(models.Model):
+    """Модель прав доступа для групп пользователей"""
+
+    access_type = models.ForeignKey(
+        AccessType,
+        verbose_name="Тип доступа",
+        on_delete=models.CASCADE,
+        related_name='rights'
+    )
+    group = models.ForeignKey(
+        AccessGroup,
+        verbose_name="Группа доступа",
+        on_delete=models.CASCADE,
+        related_name='rights'
+    )
+
+    granted_at = models.DateTimeField(
+        verbose_name="Дата назначения",
+        auto_now_add=True
+    )
+    granted_by = models.ForeignKey(
+        User,
+        verbose_name="Кто назначил",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='rights'
+    )
+    expires_at = models.DateTimeField(
+        verbose_name="Срок действия",
+        blank=True,
+        null=True
+    )
+
+    class Meta:
+        verbose_name = "Право доступа"
+        verbose_name_plural = "Права доступа"
+        unique_together = [['access_type', 'group']]
+        indexes = [
+            models.Index(fields=['group', 'access_type']),
+            models.Index(fields=['expires_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.group} | {self.access_type}"
+
+
+class AuditEntry(models.Model):
+    """Модель записей в журнал аудита"""
+
+    user = models.ForeignKey(
+        User,
+        verbose_name="Пользователь",
+        on_delete=models.PROTECT,
+        related_name="audit",
+        blank=True,
+        null=True
+    )
+    action = models.CharField(
+        verbose_name="Действие",
+        max_length=16,
+        choices=[
+            ('CREATE', 'Создание'),
+            ('UPDATE', 'Изменение'),
+            ('DELETE', 'Удаление'),
+            ('RESTORE', 'Восстановление'),
+            ('AUTH', 'Аутентификация'),
+            ('RESET_PASS', 'Сброс пароля'),
+            ('CHANGE_PASS', 'Смена пароля')
+        ]
+    )
+
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE
+    )
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    object_repr = models.CharField(
+        max_length=256,
+        verbose_name='Начальное представление объекта'
+    )
+    changes = models.JSONField(
+        verbose_name='Изменения',
+        default=dict)
+    timestamp = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата и время'
+    )
+
+    registry = models.ForeignKey(
+        'AccessRegistry',
+        verbose_name="Реестр",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit"
+    )
+
+    class Meta:
+        verbose_name = "Запись аудита"
+        verbose_name_plural = "Записи аудита"
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['timestamp']),
+            models.Index(fields=['registry']),
+            models.Index(fields=['user']),
+        ]

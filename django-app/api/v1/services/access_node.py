@@ -1,11 +1,12 @@
 from api.models import AccessNode, AccessSection, AccessObject
+from api.v1.services.audit import AuditService
 
 
 class AccessNodeService:
     """Сервис для работы с узлами доступа"""
 
     @staticmethod
-    def create_node(data: dict) -> tuple:
+    def create_node(data: dict, user) -> tuple:
         """Создание узла доступа"""
         try:
             section = AccessSection.objects.get(
@@ -22,14 +23,18 @@ class AccessNodeService:
                 section=section
             )
 
+            AuditService.log(user, 'CREATE', node)
             return node, None
         except Exception as e:
             return None, f"Ошибка создания узла: {str(e)}"
 
     @staticmethod
-    def update_node(node, data: dict) -> tuple:
+    def update_node(node, data: dict, user) -> tuple:
         """Обновление узла доступа"""
         try:
+
+            old_node = AccessNode.objects.get(pk=node.pk)
+
             if 'name' in data:
                 node.name = data['name']
             if 'description' in data:
@@ -42,12 +47,22 @@ class AccessNodeService:
                 node.last_validation_error = data['last_validation_error']
 
             node.save()
+
+            changes = AuditService.model_diff(
+                old_node, node,
+                fields=['name', 'description', 'ip',
+                        'ip_validated', 'last_validation_error']
+            )
+
+            if changes:
+                AuditService.log(user, 'UPDATE', node, changes)
+
             return node, None
         except Exception as e:
             return None, f"Ошибка обновления узла: {str(e)}"
 
     @staticmethod
-    def delete_node(node) -> tuple:
+    def delete_node(node, user) -> tuple:
         """Мягкое удаление узла доступа"""
         if node.is_deleted:
             return False, "Узел уже удален"
@@ -57,10 +72,11 @@ class AccessNodeService:
 
         node.is_deleted = True
         node.save()
+        AuditService.log(user, 'DELETE', node)
         return True, None
 
     @staticmethod
-    def restore_node(node) -> tuple:
+    def restore_node(node, user) -> tuple:
         """Восстановление узла доступа"""
         if not node.is_deleted:
             return False, "Узел не был удален"
@@ -74,4 +90,5 @@ class AccessNodeService:
 
         node.is_deleted = False
         node.save()
+        AuditService.log(user, 'RESTORE', node)
         return True, None

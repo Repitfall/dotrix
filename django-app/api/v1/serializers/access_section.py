@@ -73,10 +73,6 @@ class AccessSectionCreateOutputSerializer(serializers.Serializer):
 class AccessSectionUpdateInputSerializer(serializers.Serializer):
     """Сериализатор обновления раздела доступа"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.instance = self.context.get('instance') if self.context else None
-
     name = serializers.CharField(
         help_text="Название раздела", max_length=64, required=False)
     description = serializers.CharField(

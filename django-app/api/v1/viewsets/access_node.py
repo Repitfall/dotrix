@@ -85,7 +85,9 @@ class AccessNodeViewSet(viewsets.GenericViewSet):
     )
     def retrieve(self, request, pk=None):
         node = get_object_or_404(self.get_queryset(), id=pk)
-        output_serializer = AccessNodeModelSerializer(node)
+        self.check_object_permissions(request, node)
+        output_serializer = AccessNodeModelSerializer(
+            node, context=self.get_serializer_context())
         return Response(output_serializer.data)
 
     @extend_schema(
@@ -117,7 +119,7 @@ class AccessNodeViewSet(viewsets.GenericViewSet):
         warnings = input_serializer.context.get('warnings', [])
 
         node, error = AccessNodeService.create_node(
-            input_serializer.validated_data
+            input_serializer.validated_data, request.user
         )
 
         if error:
@@ -163,9 +165,10 @@ class AccessNodeViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, node)
 
         input_serializer = AccessNodeUpdateInputSerializer(
+            instance=node,
             data=request.data,
             partial=True,
-            context={'instance': node, 'request': request}
+            context=self.get_serializer_context()
         )
         if not input_serializer.is_valid():
             return Response(
@@ -179,7 +182,7 @@ class AccessNodeViewSet(viewsets.GenericViewSet):
         warnings = input_serializer.context.get('warnings', [])
 
         updated_node, error = AccessNodeService.update_node(
-            node, input_serializer.validated_data
+            node, input_serializer.validated_data, request.user
         )
 
         if error:
@@ -216,8 +219,9 @@ class AccessNodeViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, node)
 
         input_serializer = AccessNodeUpdateInputSerializer(
+            instance=node,
             data=request.data,
-            context={'instance': node, 'request': request}
+            context=self.get_serializer_context()
         )
         if not input_serializer.is_valid():
             return Response(
@@ -231,7 +235,7 @@ class AccessNodeViewSet(viewsets.GenericViewSet):
         warnings = input_serializer.context.get('warnings', [])
 
         updated_node, error = AccessNodeService.update_node(
-            node, input_serializer.validated_data
+            node, input_serializer.validated_data, request.user
         )
 
         if error:
@@ -266,7 +270,7 @@ class AccessNodeViewSet(viewsets.GenericViewSet):
         node = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, node)
 
-        success, error = AccessNodeService.delete_node(node)
+        success, error = AccessNodeService.delete_node(node, request.user)
 
         if error:
             return Response(
@@ -296,7 +300,7 @@ class AccessNodeViewSet(viewsets.GenericViewSet):
         node = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, node)
 
-        success, error = AccessNodeService.restore_node(node)
+        success, error = AccessNodeService.restore_node(node, request.user)
 
         if error:
             return Response(
@@ -307,5 +311,6 @@ class AccessNodeViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        output_serializer = AccessNodeModelSerializer(node).data
+        output_serializer = AccessNodeModelSerializer(
+            node, context=self.get_serializer_context()).data
         return Response(output_serializer, status=status.HTTP_200_OK)

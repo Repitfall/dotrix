@@ -270,7 +270,7 @@ class AccessTypeModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AccessType
-        fields = ['id', 'name']
+        fields = ['id']
 
 
 class AccessTypeOutputListSerializer(ListOutputSerializer):
@@ -283,5 +283,3 @@ class AccessTypeInputSerializer(serializers.Serializer):
 
     object = serializers.IntegerField(
         help_text="Идентификатор объекта доступа")
-    name = serializers.CharField(
-        help_text="Название", max_length=64)

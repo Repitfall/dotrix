@@ -102,10 +102,6 @@ class AccessObjectCreateOutputSerializer(serializers.Serializer):
 class AccessObjectUpdateInputSerializer(serializers.Serializer):
     """Сериализатор обновления объекта доступа"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.instance = self.context.get('instance') if self.context else None
-
     name = serializers.CharField(
         help_text="Название объекта",
         max_length=64,

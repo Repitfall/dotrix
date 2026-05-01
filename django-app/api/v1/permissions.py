@@ -25,16 +25,20 @@ class CanViewRegistry(permissions.BasePermission):
     """Разрешение на просмотр реестра доступа"""
 
     def has_object_permission(self, request, view, obj):
-        if not request.user or not request.user.is_authenticated:
+        if hasattr(obj, 'registry_id'):
+            registry_id = obj.registry_id
+        elif hasattr(obj, 'section'):
+            registry_id = obj.section.registry_id
+        elif hasattr(obj, 'node'):
+            registry_id = obj.node.section.registry_id
+        elif hasattr(obj, 'object'):
+            registry_id = obj.object.node.section.registry_id
+        else:
             return False
-
-        if request.user.access_groups.filter(
-            registry=obj.id,
+        return request.user.access_groups.filter(
+            registry_id=registry_id,
             is_deleted=False
-        ).exists():
-            return True
-
-        return request.user.is_staff
+        ).exists() or request.user.is_staff
 
 
 class CanEditRegistry(permissions.BasePermission):

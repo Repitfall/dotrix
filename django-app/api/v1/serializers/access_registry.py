@@ -42,7 +42,8 @@ class AccessRegistryCreateInputSerializer(serializers.Serializer):
     )
 
     def validate_name(self, value):
-        instance_id = self.instance.id if hasattr(self, 'instance') else None
+        instance_id = self.instance.id if hasattr(
+            self, 'instance') and self.instance is not None else None
         if AccessRegistry.objects.exclude(id=instance_id).filter(name=value).exists():
             raise serializers.ValidationError(
                 "Реестр с таким названием уже существует")
@@ -82,10 +83,6 @@ class AccessRegistryCreateOutputSerializer(serializers.Serializer):
 class AccessRegistryUpdateInputSerializer(serializers.Serializer):
     """Сериализатор обновления реестра доступа"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.instance = self.context.get('instance') if self.context else None
-
     name = serializers.CharField(
         help_text="Название реестра",
         max_length=64,
@@ -104,7 +101,8 @@ class AccessRegistryUpdateInputSerializer(serializers.Serializer):
     )
 
     def validate_name(self, value):
-        instance_id = self.instance.id if hasattr(self, 'instance') else None
+        instance_id = self.instance.id if hasattr(
+            self, 'instance') and self.instance is not None else None
         if AccessRegistry.objects.exclude(id=instance_id).filter(name=value).exists():
             raise serializers.ValidationError(
                 "Реестр с таким названием уже существует")
@@ -144,7 +142,8 @@ class AccessRegistryFullUpdateInputSerializer(serializers.Serializer):
     )
 
     def validate_name(self, value):
-        instance_id = self.instance.id if hasattr(self, 'instance') else None
+        instance_id = self.instance.id if hasattr(
+            self, 'instance') and self.instance is not None else None
         if AccessRegistry.objects.exclude(id=instance_id).filter(name=value).exists():
             raise serializers.ValidationError(
                 "Реестр с таким названием уже существует")

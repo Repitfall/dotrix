@@ -97,15 +97,17 @@ class AccessNodeCreateInputSerializer(serializers.Serializer):
                     data['ip'] = resolved_ip
                     data['ip_validated'] = True
                     data['last_validation_error'] = ''
-                    warnings.append({
-                        'field': 'ip',
-                        'message': f'IP {ip} не соответствует домену {name} (разрешился в {resolved_ip})'
-                    })
-                    data['ip_validated'] = False
-                    data['last_validation_error'] = warnings[-1]['message']
                 else:
-                    data['ip_validated'] = True
-                    data['last_validation_error'] = ''
+                    if ip != resolved_ip:
+                        warnings.append({
+                            'field': 'ip',
+                            'message': f'IP {ip} не соответствует домену {name} (разрешился в {resolved_ip})'
+                        })
+                        data['ip_validated'] = False
+                        data['last_validation_error'] = warnings[-1]['message']
+                    else:
+                        data['ip_validated'] = True
+                        data['last_validation_error'] = ''
 
             except socket.gaierror as e:
                 warnings.append({
@@ -158,10 +160,6 @@ class AccessNodeCreateOutputSerializer(serializers.Serializer):
 
 class AccessNodeUpdateInputSerializer(serializers.Serializer):
     """Сериализатор обновления узла доступа"""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.instance = self.context.get('instance') if self.context else None
 
     name = serializers.CharField(
         help_text="Доменное имя узла",

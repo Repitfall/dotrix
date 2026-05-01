@@ -85,8 +85,10 @@ class AccessObjectViewSet(viewsets.GenericViewSet):
     )
     def retrieve(self, request, pk=None):
         obj = get_object_or_404(self.get_queryset(), id=pk)
-        serializer = AccessObjectModelSerializer(obj)
-        return Response(serializer.data)
+        self.check_object_permissions(request, obj)
+        output_serializer = AccessObjectModelSerializer(
+            obj, context=self.get_serializer_context()).data
+        return Response(output_serializer)
 
     @extend_schema(
         summary="Создание объекта доступа",
@@ -112,7 +114,7 @@ class AccessObjectViewSet(viewsets.GenericViewSet):
             )
 
         obj, error = AccessObjectService.create_object(
-            input_serializer.validated_data)
+            input_serializer.validated_data, request.user)
         if error:
             return Response(
                 ErrorOutputSerializer({
@@ -149,9 +151,10 @@ class AccessObjectViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, obj)
 
         input_serializer = AccessObjectUpdateInputSerializer(
+            instance=obj,
             data=request.data,
             partial=True,
-            context={'instance': obj, 'request': request}
+            context=self.get_serializer_context()
         )
         if not input_serializer.is_valid():
             return Response(
@@ -163,7 +166,7 @@ class AccessObjectViewSet(viewsets.GenericViewSet):
             )
 
         updated_obj, error = AccessObjectService.update_object(
-            obj, input_serializer.validated_data)
+            obj, input_serializer.validated_data, request.user)
         if error:
             return Response(
                 ErrorOutputSerializer({
@@ -194,8 +197,9 @@ class AccessObjectViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, obj)
 
         input_serializer = AccessObjectUpdateInputSerializer(
+            instance=obj,
             data=request.data,
-            context={'instance': obj, 'request': request}
+            context=self.get_serializer_context()
         )
         if not input_serializer.is_valid():
             return Response(
@@ -207,7 +211,7 @@ class AccessObjectViewSet(viewsets.GenericViewSet):
             )
 
         updated_obj, error = AccessObjectService.update_object(
-            obj, input_serializer.validated_data)
+            obj, input_serializer.validated_data, request.user)
         if error:
             return Response(
                 ErrorOutputSerializer({
@@ -236,7 +240,7 @@ class AccessObjectViewSet(viewsets.GenericViewSet):
         obj = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, obj)
 
-        success, error = AccessObjectService.delete_object(obj)
+        success, error = AccessObjectService.delete_object(obj, request.user)
 
         if error:
             return Response(
@@ -266,7 +270,7 @@ class AccessObjectViewSet(viewsets.GenericViewSet):
         obj = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, obj)
 
-        success, error = AccessObjectService.restore_object(obj)
+        success, error = AccessObjectService.restore_object(obj, request.user)
         if error:
             return Response(
                 ErrorOutputSerializer({
@@ -276,5 +280,6 @@ class AccessObjectViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        output_serializer = AccessObjectModelSerializer(obj).data
+        output_serializer = AccessObjectModelSerializer(
+            obj, context=self.get_serializer_context()).data
         return Response(output_serializer, status=status.HTTP_200_OK)

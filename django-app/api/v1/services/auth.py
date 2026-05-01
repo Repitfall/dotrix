@@ -4,6 +4,8 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, Bl
 from datetime import timedelta
 from django.conf import settings
 
+from api.v1.services.audit import AuditService
+
 
 class AuthService:
     """Сервис для работы с авторизацией"""
@@ -83,6 +85,7 @@ class AuthService:
         user.set_password(password)
         user.reset_password = False
         user.save()
+        AuditService.log(user, 'CHANGE_PASS', user)
 
         outstanding_tokens = OutstandingToken.objects.filter(user=user)
         for token in outstanding_tokens:

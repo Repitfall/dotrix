@@ -1,11 +1,12 @@
 from api.models import AccessGroup, AccessRegistry, User
+from api.v1.services.audit import AuditService
 
 
 class AccessGroupService:
     """Сервис для работы с группами доступа"""
 
     @staticmethod
-    def create_group(data: dict) -> tuple:
+    def create_group(data: dict, user) -> tuple:
         """Создание группы доступа"""
         try:
             registry = AccessRegistry.objects.get(
@@ -47,21 +48,25 @@ class AccessGroupService:
                 )
                 group.owned_registries.set(registries)
 
+            AuditService.log(user, 'CREATE', group)
             return group, None
         except Exception as e:
             return None, f"Ошибка создания группы: {str(e)}"
 
     @staticmethod
-    def update_group(group, data: dict) -> tuple:
+    def update_group(group, data: dict, user) -> tuple:
         """Обновление группы доступа"""
         try:
+
+            old_group = AccessGroup.objects.get(pk=group.pk)
+
             if 'registry_id' in data and data['registry_id'] != group.registry_id:
                 return None, "Изменение реестра группы запрещено"
             if 'name' in data:
                 group.name = data['name']
             if 'description' in data:
                 group.description = data['description']
-            if 'parent_group_id' in data and data['parent_group_id']:
+            if 'parent_group_id' in data:
                 parent_group_id = data['parent_group_id']
 
                 if parent_group_id:
@@ -78,7 +83,7 @@ class AccessGroupService:
                         depth += 1
                         current = current.parent_group
                         if depth > max_depth:
-                            return f"Превышена максимальная глубина иерархии ({max_depth} уровней)"
+                            return None, f"Превышена максимальная глубина иерархии ({max_depth} уровней)"
 
                     group.parent_group_id = data['parent_group_id']
 
@@ -102,12 +107,21 @@ class AccessGroupService:
                 else:
                     group.owned_registries.clear()
 
+            changes = AuditService.model_diff(
+                old_group, group,
+                fields=['name', 'description',
+                        'parent_group_id', 'owned_registries']
+            )
+
+            if changes:
+                AuditService.log(user, 'UPDATE', group, changes)
+
             return group, None
         except Exception as e:
             return None, f"Ошибка обновления группы: {str(e)}"
 
     @staticmethod
-    def delete_group(group) -> tuple:
+    def delete_group(group, user) -> tuple:
         """Мягкое удаление группы доступа"""
         if group.is_deleted:
             return False, "Группа уже удалена"
@@ -123,10 +137,11 @@ class AccessGroupService:
 
         group.is_deleted = True
         group.save()
+        AuditService.log(user, 'DELETE', group)
         return True, None
 
     @staticmethod
-    def restore_group(group) -> tuple:
+    def restore_group(group, user) -> tuple:
         """Восстановление группы доступа"""
         if not group.is_deleted:
             return False, "Группа не была удалена"
@@ -140,4 +155,5 @@ class AccessGroupService:
 
         group.is_deleted = False
         group.save()
+        AuditService.log(user, 'RESTORE', group)
         return True, None

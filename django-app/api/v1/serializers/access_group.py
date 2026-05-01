@@ -25,7 +25,7 @@ class AccessGroupModelSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def get_user_count(self, obj):
-        return obj.get_all_users().count()
+        return len(obj.get_all_users())
 
     def get_owner_of_registries(self, obj):
         return list(obj.owned_registries.values_list('id', flat=True))
@@ -108,16 +108,17 @@ class AccessGroupCreateInputSerializer(serializers.Serializer):
 
     def validate_name(self, value):
         registry_id = self.initial_data.get('registry_id')
-        if registry_id:
-            instance_id = self.instance.id if hasattr(
-                self, 'instance') else None
-            if AccessGroup.objects.exclude(id=instance_id).filter(
-                registry_id=registry_id,
-                name=value
-            ).exists():
-                raise serializers.ValidationError(
-                    "Группа с таким именем уже существует в этом реестре"
-                )
+        if not registry_id and self.instance:
+            registry_id = self.instance.registry_id
+        instance_id = self.instance.id if hasattr(
+            self, 'instance') and self.instance is not None else None
+        if AccessGroup.objects.exclude(id=instance_id).filter(
+            registry_id=registry_id,
+            name=value
+        ).exists():
+            raise serializers.ValidationError(
+                "Группа с таким именем уже существует в этом реестре"
+            )
         return value
 
     def validate_user_ids(self, value):
@@ -163,10 +164,6 @@ class AccessGroupCreateOutputSerializer(serializers.Serializer):
 class AccessGroupUpdateInputSerializer(serializers.Serializer):
     """Сериализатор обновления группы доступа"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.instance = self.context.get('instance') if self.context else None
-
     name = serializers.CharField(
         help_text="Название группы", max_length=64, required=False)
     description = serializers.CharField(
@@ -211,11 +208,13 @@ class AccessGroupUpdateInputSerializer(serializers.Serializer):
         return value
 
     def validate_name(self, value):
-        if value and hasattr(self, 'instance') and self.instance:
-            if AccessGroup.objects.exclude(id=self.instance.id).filter(
-                registry=self.instance.registry,
-                name=value,
-                is_deleted=False
+        registry_id = self.initial_data.get('registry_id')
+        if registry_id:
+            instance_id = self.instance.id if hasattr(
+                self, 'instance') and self.instance is not None else None
+            if AccessGroup.objects.exclude(id=instance_id).filter(
+                registry_id=registry_id,
+                name=value
             ).exists():
                 raise serializers.ValidationError(
                     "Группа с таким именем уже существует в этом реестре"

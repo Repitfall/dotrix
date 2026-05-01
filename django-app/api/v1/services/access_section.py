@@ -1,11 +1,12 @@
 from api.models import AccessSection, AccessRegistry
+from api.v1.services.audit import AuditService
 
 
 class AccessSectionService:
     """Сервис для работы с разделами доступа"""
 
     @staticmethod
-    def create_section(data: dict) -> tuple:
+    def create_section(data: dict, user) -> tuple:
         """Создание раздела доступа"""
         try:
             registry = AccessRegistry.objects.get(
@@ -19,18 +20,29 @@ class AccessSectionService:
                 registry=registry
             )
 
+            AuditService.log(user, 'CREATE', section)
             return section, None
         except Exception as e:
             return None, f"Ошибка создания раздела: {str(e)}"
 
     @staticmethod
-    def update_section(section, data: dict) -> tuple:
+    def update_section(section, data: dict, user) -> tuple:
         """Обновление раздела доступа"""
         try:
+
+            old_section = AccessSection.objects.get(pk=section.pk)
+
             if 'name' in data:
                 section.name = data['name']
             if 'description' in data:
                 section.description = data['description']
+
+            changes = AuditService.model_diff(
+                old_section, section,
+                fields=['name', 'description']
+            )
+            if changes:
+                AuditService.log(user, 'UPDATE', section, changes)
 
             section.save()
             return section, None
@@ -38,7 +50,7 @@ class AccessSectionService:
             return None, f"Ошибка обновления раздела: {str(e)}"
 
     @staticmethod
-    def delete_section(section) -> tuple:
+    def delete_section(section, user) -> tuple:
         """Мягкое удаление раздела доступа"""
         if section.is_deleted:
             return False, "Раздел уже удален"
@@ -48,10 +60,11 @@ class AccessSectionService:
 
         section.is_deleted = True
         section.save()
+        AuditService.log(user, 'DELETE', section)
         return True, None
 
     @staticmethod
-    def restore_section(section) -> tuple:
+    def restore_section(section, user) -> tuple:
         """Восстановление раздела доступа"""
         if not section.is_deleted:
             return False, "Раздел не был удален"
@@ -65,4 +78,5 @@ class AccessSectionService:
 
         section.is_deleted = False
         section.save()
-        return True, Non
+        AuditService.log(user, 'RESTORE', section)
+        return True, None

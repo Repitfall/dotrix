@@ -20,7 +20,7 @@ from api.models import (
     AccessObject,
     AccessType
 )
-from api.authentication import IsAdmin
+from api.v1.permissions import IsAdmin
 from .serializers import (
     ErrorOutputSerializer,
     StatusOutputSerializer,

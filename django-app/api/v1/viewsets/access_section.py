@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from api.models import AccessSection
+from api.models import AccessSection, AccessRegistry
 from api.v1.permissions import IsAdmin, CanViewRegistry
 from api.v1.serializers.access_section import (
     AccessSectionModelSerializer,
@@ -85,6 +85,7 @@ class AccessSectionViewSet(viewsets.GenericViewSet):
     )
     def retrieve(self, request, pk=None):
         section = get_object_or_404(self.get_queryset(), id=pk)
+        self.check_object_permissions(request, section)
         output_serializer = AccessSectionModelSerializer(section)
         return Response(output_serializer.data)
 
@@ -113,7 +114,7 @@ class AccessSectionViewSet(viewsets.GenericViewSet):
             )
 
         section, error = AccessSectionService.create_section(
-            input_serializer.validated_data
+            input_serializer.validated_data, request.user
         )
 
         if error:
@@ -152,9 +153,9 @@ class AccessSectionViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, section)
 
         input_serializer = AccessSectionUpdateInputSerializer(
+            instance=section,
             data=request.data,
             partial=True,
-            context={'instance': section}
         )
         if not input_serializer.is_valid():
             return Response(
@@ -166,7 +167,7 @@ class AccessSectionViewSet(viewsets.GenericViewSet):
             )
 
         updated_section, error = AccessSectionService.update_section(
-            section, input_serializer.validated_data
+            section, input_serializer.validated_data, request.user
         )
 
         if error:
@@ -199,8 +200,8 @@ class AccessSectionViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, section)
 
         input_serializer = AccessSectionUpdateInputSerializer(
+            instance=section,
             data=request.data,
-            context={'instance': section}
         )
         if not input_serializer.is_valid():
             return Response(
@@ -212,7 +213,7 @@ class AccessSectionViewSet(viewsets.GenericViewSet):
             )
 
         updated_section, error = AccessSectionService.update_section(
-            section, input_serializer.validated_data
+            section, input_serializer.validated_data, request.user
         )
 
         if error:
@@ -243,7 +244,8 @@ class AccessSectionViewSet(viewsets.GenericViewSet):
         section = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, section)
 
-        success, error = AccessSectionService.delete_section(section)
+        success, error = AccessSectionService.delete_section(
+            section, request.user)
 
         if error:
             return Response(
@@ -273,7 +275,8 @@ class AccessSectionViewSet(viewsets.GenericViewSet):
         section = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, section)
 
-        success, error = AccessSectionService.restore_section(section)
+        success, error = AccessSectionService.restore_section(
+            section, request.user)
 
         if error:
             return Response(
@@ -284,5 +287,6 @@ class AccessSectionViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        output_serializer = AccessSectionModelSerializer(section).data
+        output_serializer = AccessSectionModelSerializer(
+            section, context=self.get_serializer_context()).data
         return Response(output_serializer, status=status.HTTP_200_OK)

@@ -1,6 +1,8 @@
 import secrets
 import string
+
 from api.models import User
+from api.v1.services.audit import AuditService
 
 
 class UserService:
@@ -18,7 +20,7 @@ class UserService:
                 return password
 
     @staticmethod
-    def create_user(data: dict) -> tuple:
+    def create_user(data: dict, admin) -> tuple:
         """Создание учетной записи пользователя"""
 
         login = data.get('login')
@@ -43,16 +45,21 @@ class UserService:
 
             user.save()
 
+            AuditService.log(admin, 'CREATE', user)
+
             return user, password, None
 
         except Exception as e:
             return None, None, f"Ошибка создания пользователя: {str(e)}"
 
     @staticmethod
-    def update_user(user, data: dict) -> tuple:
+    def update_user(user, data: dict, admin) -> tuple:
         """Обновление учетной записи пользователя"""
 
         try:
+
+            old_user = User.objects.get(pk=user.pk)
+
             if 'last_name' in data:
                 user.last_name = data['last_name']
             if 'first_name' in data:
@@ -71,13 +78,23 @@ class UserService:
                     user.reset_password = True
 
             user.save()
+
+            changes = AuditService.model_diff(
+                old_user, user,
+                fields=['last_name', 'first_name',
+                        'patronymic', 'login', 'post', 'is_active']
+            )
+
+            if changes:
+                AuditService.log(admin, 'UPDATE', user, changes)
+
             return user, None
 
         except Exception as e:
             return None, f"Ошибка обновления пользователя: {str(e)}"
 
     @staticmethod
-    def delete_user(user) -> tuple:
+    def delete_user(user, admin) -> tuple:
         """Мягкое удаление учетной записи пользователя"""
 
         if user.is_deleted:
@@ -86,10 +103,11 @@ class UserService:
         user.is_deleted = True
         user.is_active = False
         user.save()
+        AuditService.log(admin, 'DELETE', user)
         return True, None
 
     @staticmethod
-    def restore_user(user) -> tuple:
+    def restore_user(user, admin) -> tuple:
         """Восстановление учетной записи пользователя"""
 
         if not user.is_deleted:
@@ -97,10 +115,11 @@ class UserService:
 
         user.is_deleted = False
         user.save()
+        AuditService.log(admin, 'RESTORE', user)
         return True, None
 
     @staticmethod
-    def reset_password(user) -> tuple:
+    def reset_password(user, admin) -> tuple:
         """Сброс пароля пользователя"""
 
         if not user.is_active:
@@ -109,5 +128,6 @@ class UserService:
         user.set_password(password)
         user.reset_password = True
         user.save()
+        AuditService.log(admin, 'RESET_PASS', user)
 
         return password, None

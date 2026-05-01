@@ -119,7 +119,7 @@ class AccessGroupViewSet(viewsets.GenericViewSet):
             )
 
         group, error = AccessGroupService.create_group(
-            input_serializer.validated_data
+            input_serializer.validated_data, request.user
         )
 
         if error:
@@ -161,6 +161,7 @@ class AccessGroupViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, group)
 
         input_serializer = AccessGroupUpdateInputSerializer(
+            instance=group,
             data=request.data,
             partial=True
         )
@@ -174,7 +175,7 @@ class AccessGroupViewSet(viewsets.GenericViewSet):
             )
 
         updated_group, error = AccessGroupService.update_group(
-            group, input_serializer.validated_data
+            group, input_serializer.validated_data, request.user
         )
 
         if error:
@@ -207,6 +208,7 @@ class AccessGroupViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, group)
 
         input_serializer = AccessGroupUpdateInputSerializer(
+            instance=group,
             data=request.data
         )
         if not input_serializer.is_valid():
@@ -219,7 +221,7 @@ class AccessGroupViewSet(viewsets.GenericViewSet):
             )
 
         updated_group, error = AccessGroupService.update_group(
-            group, input_serializer.validated_data
+            group, input_serializer.validated_data, request.user
         )
 
         if error:
@@ -250,7 +252,7 @@ class AccessGroupViewSet(viewsets.GenericViewSet):
         group = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, group)
 
-        success, error = AccessGroupService.delete_group(group)
+        success, error = AccessGroupService.delete_group(group, request.user)
 
         if error:
             return Response(
@@ -280,7 +282,7 @@ class AccessGroupViewSet(viewsets.GenericViewSet):
         group = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, group)
 
-        success, error = AccessGroupService.restore_group(group)
+        success, error = AccessGroupService.restore_group(group, request.user)
 
         if error:
             return Response(

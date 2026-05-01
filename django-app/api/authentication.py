@@ -23,10 +23,3 @@ class CookieJWTAuthentication(JWTAuthentication):
 
     def get_validated_token(self, raw_token):
         return super().get_validated_token(raw_token)
-
-
-class IsAdmin(permissions.BasePermission):
-    """Аутентификатор, проверяющий на наличие роли администратора"""
-
-    def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.is_staff

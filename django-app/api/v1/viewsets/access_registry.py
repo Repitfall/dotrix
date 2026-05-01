@@ -1,5 +1,7 @@
+import datetime
 from django.shortcuts import get_object_or_404
 from django_filters import rest_framework as filters
+from django.http import FileResponse
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -15,8 +17,10 @@ from api.v1.serializers.access_registry import (
     AccessRegistryFullUpdateInputSerializer,
     AccessRegistryCreateOutputSerializer
 )
+from api.v1.serializers.export import ExportRegistrySerializer
 from api.v1.serializers.error import ErrorOutputSerializer
 from api.v1.services.access_registry import AccessRegistryService
+from api.v1.services.export import ExportService
 from api.v1.services.pagination import Pagination
 from api.v1.filters.access_registry import AccessRegistryFilter
 
@@ -111,7 +115,7 @@ class AccessRegistryViewSet(viewsets.GenericViewSet):
             )
 
         registry, error = AccessRegistryService.create_registry(
-            input_serializer.validated_data
+            input_serializer.validated_data, request.user
         )
 
         if error:
@@ -151,6 +155,7 @@ class AccessRegistryViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, registry)
 
         input_serializer = AccessRegistryUpdateInputSerializer(
+            instance=registry,
             data=request.data,
             partial=True
         )
@@ -164,7 +169,7 @@ class AccessRegistryViewSet(viewsets.GenericViewSet):
             )
 
         updated_registry, error = AccessRegistryService.update_registry(
-            registry, input_serializer.validated_data
+            registry, input_serializer.validated_data, request.user
         )
 
         if error:
@@ -198,6 +203,7 @@ class AccessRegistryViewSet(viewsets.GenericViewSet):
         self.check_object_permissions(request, registry)
 
         input_serializer = AccessRegistryFullUpdateInputSerializer(
+            instance=registry,
             data=request.data
         )
         if not input_serializer.is_valid():
@@ -210,7 +216,7 @@ class AccessRegistryViewSet(viewsets.GenericViewSet):
             )
 
         updated_registry, error = AccessRegistryService.update_registry(
-            registry, input_serializer.validated_data
+            registry, input_serializer.validated_data, request.user
         )
 
         if error:
@@ -242,7 +248,8 @@ class AccessRegistryViewSet(viewsets.GenericViewSet):
         registry = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, registry)
 
-        success, error = AccessRegistryService.delete_registry(registry)
+        success, error = AccessRegistryService.delete_registry(
+            registry, request.user)
 
         if error:
             return Response(
@@ -272,7 +279,8 @@ class AccessRegistryViewSet(viewsets.GenericViewSet):
         registry = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, registry)
 
-        success, error = AccessRegistryService.restore_registry(registry)
+        success, error = AccessRegistryService.restore_registry(
+            registry, request.user)
 
         if error:
             return Response(
@@ -283,5 +291,58 @@ class AccessRegistryViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        output_serializer = AccessRegistryModelSerializer(registry).data
+        output_serializer = AccessRegistryModelSerializer(
+            registry, context=self.get_serializer_context()).data
         return Response(output_serializer, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Экспорт реестра в Excel",
+        request=ExportRegistrySerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Excel-файл",
+                response=bytes,
+            ),
+            400: ErrorOutputSerializer,
+            401: ErrorOutputSerializer,
+            403: ErrorOutputSerializer,
+            404: ErrorOutputSerializer,
+        },
+        tags=['Реестры доступа']
+    )
+    @action(detail=True, methods=['post'], url_path='export-excel')
+    def export_excel(self, request, pk=None):
+        registry = get_object_or_404(self.get_queryset(), id=pk)
+
+        if not request.user.is_staff:
+            if not request.user.access_groups.filter(
+                owned_registries=registry, is_deleted=False
+            ).exists():
+                return Response(
+                    ErrorOutputSerializer({
+                        'error': 'Недостаточно прав',
+                        'detail': 'Вы не являетесь руководителем этого реестра.'
+                    }).data,
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+        input_serializer = ExportRegistrySerializer(data=request.data)
+        if not input_serializer.is_valid():
+            return Response(
+                ErrorOutputSerializer({
+                    'error': 'Некорректные параметры фильтрации',
+                    'detail': input_serializer.errors
+                }).data,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        excel_file = ExportService.export_registry(
+            registry, input_serializer.validated_data)
+        filename = f"реестр_{registry.name}_{datetime.date.today().isoformat()}.xlsx"
+        response = FileResponse(
+            excel_file,
+            as_attachment=True,
+            filename=filename,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        return response
