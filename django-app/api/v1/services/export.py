@@ -19,6 +19,7 @@ class ExportService:
         if filters.get('group_ids'):
             groups_qs = groups_qs.filter(id__in=filters['group_ids'])
         groups = list(groups_qs.order_by('name'))
+
         ws_users = wb.create_sheet("Пользователи")
         ExportService._build_users_sheet(ws_users, groups)
 
@@ -44,10 +45,12 @@ class ExportService:
         header_fill = PatternFill(
             start_color="B7DEE8", end_color="B7DEE8", fill_type="solid")
         header_font = Font(bold=True)
+
         thin_border = Border(
             left=Side(style='thin'), right=Side(style='thin'),
             top=Side(style='thin'), bottom=Side(style='thin')
         )
+
         for col_idx in range(1, num_columns + 1):
             cell = ws.cell(row=1, column=col_idx)
             cell.fill = header_fill
@@ -118,10 +121,12 @@ class ExportService:
             if filters.get('object_ids'):
                 objects_qs = objects_qs.filter(id__in=filters['object_ids'])
             objects = objects_qs.order_by('name')
+
             for obj in objects:
                 types_qs = AccessType.objects.filter(
                     object=obj, is_deleted=False).select_related('template')
                 types = types_qs.order_by('template__name')
+
                 for at in types:
                     assigned_group_ids = set(
                         AccessRight.objects.filter(access_type=at)
