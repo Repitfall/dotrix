@@ -170,8 +170,9 @@ class AccessRightViewSet(viewsets.GenericViewSet):
         access_right = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, access_right)
 
+        ticket = request.data.get('ticket')
         success, error = AccessRightService.delete_access_right(
-            access_right, request.user)
+            access_right, request.user, ticket)
         if error:
             return Response(ErrorOutputSerializer({
                 'error': "Ошибка отзыва",

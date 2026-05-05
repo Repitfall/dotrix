@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Реестры доступа{% endblock %}
+{% block content %}
+<h1>Реестры доступа <button class="btn btn-primary btn-sm float-end" onclick="openCreateModal()">Создать реестр</button></h1>
+<div id="error" class="alert alert-danger d-none"></div>
+<table class="table table-striped mt-3">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Описание</th>
+            <th style="width:150px">Статистика</th>
+            <th style="width:120px">Действия</th>
+        </tr>
+    </thead>
+    <tbody id="registry-table-body">
+        <tr><td colspan="4" class="text-center">Загрузка...</td></tr>
+    </tbody>
+</table>
+
+<!-- Модальное окно создания/редактирования реестра (общее) -->
+<div class="modal fade" id="createRegistryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="registryModalTitle">Создать реестр</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="registry-id">
+                <div class="mb-3">
+                    <label for="registry-name" class="form-label">Название</label>
+                    <input type="text" class="form-control" id="registry-name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="registry-desc" class="form-label">Описание</label>
+                    <textarea class="form-control" id="registry-desc"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="save-registry-btn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function loadRegistries() {
+    try {
+        const resp = await fetch('/api/v1/registries/', { credentials: 'include' });
+        if (!resp.ok) throw new Error('Ошибка загрузки');
+        const data = await resp.json();
+        const tbody = document.getElementById('registry-table-body');
+        tbody.innerHTML = '';
+        data.results.forEach(reg => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${reg.name}</td>
+                <td>${reg.description || ''}</td>
+                <td id="stats-${reg.id}">
+                    <span class="text-muted small">Загрузка...</span>
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="editRegistry(${reg.id}, '${reg.name}', '${reg.description || ''}')" title="Редактировать"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-outline-danger" onclick="deleteRegistry(${reg.id})" title="Удалить"><i class="bi bi-trash"></i></button>
+                        <a href="/registries/${reg.id}/" class="btn btn-outline-primary" title="Просмотр"><i class="bi bi-eye"></i></a>
+                    </div>
+                </td>
+            `;
+            loadStatsForRegistry(reg.id);
+        });
+        if (data.results.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Нет реестров</td></tr>';
+        }
+    } catch (err) {
+        document.getElementById('error').textContent = err.message;
+        document.getElementById('error').classList.remove('d-none');
+    }
+}
+
+async function loadStatsForRegistry(registryId) {
+    const cell = document.getElementById(`stats-${registryId}`);
+    if (!cell) return;
+    try {
+        const [sectionsResp, groupsResp] = await Promise.all([
+            fetch(`/api/v1/sections/?registry_id=${registryId}&is_deleted=false`, { credentials: 'include' }),
+            fetch(`/api/v1/groups/?registry_id=${registryId}&is_deleted=false`, { credentials: 'include' })
+        ]);
+        const sectionsCount = sectionsResp.ok ? (await sectionsResp.json()).count : '?';
+        const groupsCount = groupsResp.ok ? (await groupsResp.json()).count : '?';
+        cell.innerHTML = `
+            <span class="badge bg-info me-1" title="Разделы"><i class="bi bi-diagram-3 me-1"></i>${sectionsCount}</span>
+            <span class="badge bg-success" title="Группы"><i class="bi bi-people me-1"></i>${groupsCount}</span>
+        `;
+    } catch (e) {
+        cell.innerHTML = '<span class="text-danger small">—</span>';
+    }
+}
+
+// Открытие модального окна для СОЗДАНИЯ
+function openCreateModal() {
+    // Сбрасываем скрытое поле id и текстовые поля
+    document.getElementById('registry-id').value = '';
+    document.getElementById('registry-name').value = '';
+    document.getElementById('registry-desc').value = '';
+    document.getElementById('registryModalTitle').textContent = 'Создать реестр';
+    const modal = new bootstrap.Modal(document.getElementById('createRegistryModal'));
+    modal.show();
+}
+
+// Открытие модального окна для РЕДАКТИРОВАНИЯ (заполняет поля)
+function editRegistry(id, name, desc) {
+    document.getElementById('registry-id').value = id;
+    document.getElementById('registry-name').value = name;
+    document.getElementById('registry-desc').value = desc;
+    document.getElementById('registryModalTitle').textContent = 'Редактировать реестр';
+    const modal = new bootstrap.Modal(document.getElementById('createRegistryModal'));
+    modal.show();
+}
+
+async function deleteRegistry(id) {
+    if (!confirm('Вы уверены, что хотите удалить реестр?')) return;
+    const resp = await fetch(`/api/v1/registries/${id}/`, { method: 'DELETE', credentials: 'include' });
+    if (resp.ok) {
+        loadRegistries();
+    } else {
+        alert('Ошибка при удалении');
+    }
+}
+
+// Сохранение (создание или обновление)
+document.getElementById('save-registry-btn').addEventListener('click', async function() {
+    const id = document.getElementById('registry-id').value;
+    const name = document.getElementById('registry-name').value.trim();
+    const desc = document.getElementById('registry-desc').value.trim();
+    if (!name) return alert('Введите название');
+
+    const url = id ? `/api/v1/registries/${id}/` : '/api/v1/registries/';
+    const method = id ? 'PUT' : 'POST';
+    const body = JSON.stringify({ name, description: desc });
+    const resp = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body });
+    if (resp.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('createRegistryModal')).hide();
+        // Сбрасываем поля после успешного сохранения
+        document.getElementById('registry-id').value = '';
+        document.getElementById('registry-name').value = '';
+        document.getElementById('registry-desc').value = '';
+        document.getElementById('registryModalTitle').textContent = 'Создать реестр';
+        loadRegistries();
+    } else {
+        const err = await resp.json();
+        alert(err.detail || 'Ошибка сохранения');
+    }
+});
+
+loadRegistries();
+</script>
+{% endblock %}

@@ -34,10 +34,6 @@ class AccessTypeFilter(filters.FilterSet):
         lookup_expr='icontains'
     )
 
-    is_deleted = filters.BooleanFilter(
-        field_name='is_deleted'
-    )
-
     ordering = filters.OrderingFilter(
         fields=(
             ('id', 'id'),

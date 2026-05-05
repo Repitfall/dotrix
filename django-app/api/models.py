@@ -37,7 +37,7 @@ class User(AbstractUser):
     )
 
     auth_offline = models.BooleanField(
-        verbose_name="Автономная авторизация",
+        verbose_name="Автономная аутентификация",
         default=True
     )
     reset_password = models.BooleanField(
@@ -373,10 +373,6 @@ class AccessType(models.Model):
         on_delete=models.PROTECT
     )
 
-    is_deleted = models.BooleanField(
-        default=False
-    )
-
     class Meta:
         verbose_name = "Тип доступа"
         verbose_name_plural = "Типы доступа"
@@ -418,6 +414,12 @@ class AccessRight(models.Model):
         verbose_name="Срок действия",
         blank=True,
         null=True
+    )
+    ticket = models.CharField(
+        max_length=9,
+        null=True,
+        blank=True,
+        verbose_name="Номер заявки"
     )
 
     class Meta:

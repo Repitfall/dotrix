@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+
+<!-- Верхняя строка: приветствие и дата -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>Добро пожаловать, <span id="user-name">Пользователь</span></h2>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <span class="text-muted" id="current-date"></span>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Левая колонка (8) -->
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <strong>Активные права по реестрам</strong>
+            </div>
+            <div class="card-body">
+                <div id="registry-summaries">Загрузка...</div>
+            </div>
+            <div class="card-footer text-end">
+                <a href="/registries/" class="btn btn-sm btn-outline-primary">Смотреть всё</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Правая колонка (4) -->
+    <div class="col-md-4">
+        <!-- Последние действия (скрыт по умолчанию, покажется если есть логи) -->
+        <div id="recent-logs-container" class="card mb-4 shadow-sm d-none">
+            <div class="card-header">
+                <strong>Последние действия</strong>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush" id="recent-logs-list"></ul>
+            </div>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <strong>Быстрые действия</strong>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/rights/" class="btn btn-outline-secondary btn-sm">Все права</a>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="openSearch()">Поисковый запрос</button>
+                    <button class="btn btn-outline-success btn-sm" id="export-btn" onclick="exportExcel()">Excel-сводка</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Текущая дата
+document.getElementById('current-date').textContent = new Date().toLocaleDateString('ru-RU', {
+    day: 'numeric', month: 'long', year: 'numeric'
+});
+
+// Загрузка имени пользователя через /api/v1/users/profile/
+async function loadUserInfo() {
+    try {
+        const resp = await fetch('/api/v1/users/profile/', { credentials: 'include' });
+        if (resp.ok) {
+            const user = await resp.json();
+            let displayName = user.last_name || '';
+            if (user.first_name) displayName += ' ' + user.first_name;
+            if (user.patronymic) displayName += ' ' + user.patronymic;
+            if (!displayName.trim()) displayName = user.login || 'Пользователь';
+            document.getElementById('user-name').textContent = displayName;
+        } else {
+            // Если не авторизован – останется "Пользователь"
+        }
+    } catch (e) {
+        // игнорируем
+    }
+}
+loadUserInfo();
+
+// Вспомогательная функция для получения count
+async function fetchCount(url) {
+    try {
+        const resp = await fetch(url, { credentials: 'include' });
+        if (!resp.ok) return 0;
+        const data = await resp.json();
+        return data.count;
+    } catch (e) {
+        return 0;
+    }
+}
+
+// Загрузка сводки по реестрам
+async function loadRegistrySummaries() {
+    const container = document.getElementById('registry-summaries');
+    try {
+        const resp = await fetch('/api/v1/registries/', { credentials: 'include' });
+        if (!resp.ok) throw new Error('Ошибка загрузки реестров');
+        const data = await resp.json();
+        const registries = data.results;
+        if (registries.length === 0) {
+            container.innerHTML = '<p class="text-muted">Нет доступных реестров.</p>';
+            return;
+        }
+        container.innerHTML = '';
+        for (const reg of registries) {
+            const card = document.createElement('div');
+            card.className = 'card mb-2';
+            card.innerHTML = `
+                <div class="card-body py-2">
+                    <h6 class="card-title">${reg.name}</h6>
+                    <div class="row small text-muted">
+                        <div class="col-3">Разделы <span class="badge bg-secondary" id="sections-${reg.id}">—</span></div>
+                        <div class="col-3">Узлы <span class="badge bg-secondary" id="nodes-${reg.id}">—</span></div>
+                        <div class="col-3">Объекты <span class="badge bg-secondary" id="objects-${reg.id}">—</span></div>
+                        <div class="col-3">Права <span class="badge bg-secondary" id="rights-${reg.id}">—</span></div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+            // асинхронно заполняем числа
+            loadCountForRegistry(reg.id);
+        }
+    } catch (err) {
+        container.innerHTML = '<p class="text-danger">Ошибка загрузки реестров.</p>';
+    }
+}
+
+async function loadCountForRegistry(registryId) {
+    const [sections, nodes, objects, rights] = await Promise.all([
+        fetchCount(`/api/v1/sections/?registry_id=${registryId}`),
+        fetchCount(`/api/v1/nodes/?registry_id=${registryId}`),
+        fetchCount(`/api/v1/objects/?registry_id=${registryId}`),
+        fetchCount(`/api/v1/rights/?registry_id=${registryId}`)
+    ]);
+    document.getElementById(`sections-${registryId}`).textContent = sections;
+    document.getElementById(`nodes-${registryId}`).textContent = nodes;
+    document.getElementById(`objects-${registryId}`).textContent = objects;
+    document.getElementById(`rights-${registryId}`).textContent = rights;
+}
+loadRegistrySummaries();
+
+// Последние действия (логи)
+async function loadRecentLogs() {
+    const container = document.getElementById('recent-logs-container');
+    const list = document.getElementById('recent-logs-list');
+    try {
+        const resp = await fetch('/api/v1/logs/?ordering=-timestamp', { credentials: 'include' });
+        if (!resp.ok) throw new Error('Нет доступа к логам');
+        const data = await resp.json();
+        const logs = data.results ? data.results.slice(0, 5) : [];
+        if (logs.length > 0) {
+            container.classList.remove('d-none');
+            list.innerHTML = '';
+            const actionMap = {'CREATE':'Создание','UPDATE':'Изменение','DELETE':'Удаление','RESTORE':'Восстановление'};
+            logs.forEach(log => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item small';
+                li.innerHTML = `<strong>${actionMap[log.action] || log.action}</strong> ${log.object_repr}<br><span class="text-muted">${new Date(log.timestamp).toLocaleString('ru-RU')}</span>`;
+                list.appendChild(li);
+            });
+        } else {
+            container.classList.add('d-none');
+        }
+    } catch (e) {
+        container.classList.add('d-none');
+    }
+}
+loadRecentLogs();
+
+function openSearch() {
+    window.location.href = '/rights/';
+}
+
+function exportExcel() {
+    // Заглушка – в будущем откроет модальное окно выбора реестра
+    alert('Функция экспорта будет доступна в ближайшее время.');
+}
+</script>
+{% endblock %}

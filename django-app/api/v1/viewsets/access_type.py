@@ -143,35 +143,3 @@ class AccessTypeViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @extend_schema(
-        summary="Восстановление типа доступа",
-        responses={
-            200: AccessTypeModelSerializer,
-            400: ErrorOutputSerializer,
-            401: ErrorOutputSerializer,
-            403: ErrorOutputSerializer,
-            404: ErrorOutputSerializer
-        },
-        tags=['Типы доступа']
-    )
-    @action(detail=True, methods=['post'], url_path='restore')
-    def restore(self, request, pk=None):
-        access_type = get_object_or_404(self.get_queryset(), id=pk)
-        self.check_object_permissions(request, access_type)
-
-        success, error = AccessTypeService.restore_access_type(
-            access_type, request.user)
-
-        if error:
-            return Response(
-                ErrorOutputSerializer({
-                    'error': "Ошибка восстановления",
-                    'detail': error
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        output_serializer = AccessTypeModelSerializer(
-            access_type, context=self.get_serializer_context()).data
-        return Response(output_serializer, status=status.HTTP_200_OK)

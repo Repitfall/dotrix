@@ -29,7 +29,7 @@ class AccessObjectModelSerializer(serializers.ModelSerializer):
 
     def get_count_types(self, obj):
         """Количество активных типов доступа у объекта"""
-        return obj.types.filter(is_deleted=False).count()
+        return obj.types.count()
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

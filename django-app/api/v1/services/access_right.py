@@ -12,7 +12,7 @@ class AccessRightService:
         """Создание права"""
         try:
             access_type = AccessType.objects.get(
-                id=data['access_type_id'], is_deleted=False)
+                id=data['access_type_id'])
             group = AccessGroup.objects.get(
                 id=data['group_id'], is_deleted=False)
 
@@ -22,7 +22,8 @@ class AccessRightService:
                 granted_by=granted_by,
                 expires_at=data.get('expires_at')
             )
-            AuditService.log(granted_by, 'CREATE', access_right)
+            AuditService.log(granted_by, 'CREATE', access_right, {
+                             'ticket': data.get('ticket')})
             return access_right, None
         except Exception as e:
             return None, f"Ошибка назначения права: {str(e)}"
@@ -51,11 +52,14 @@ class AccessRightService:
             return None, f"Ошибка обновления права: {str(e)}"
 
     @staticmethod
-    def delete_access_right(access_right, user) -> tuple:
+    def delete_access_right(access_right, user, ticket=None) -> tuple:
         """Полное удаление права"""
         try:
+            AuditService.log(user, 'DELETE', access_right, {
+                'ticket': ticket,
+                'details': f"Отозвано право {access_right}"
+            })
             access_right.delete()
-            AuditService.log(user, 'DELETE', access_right)
             return True, None
         except Exception as e:
             return False, f"Ошибка отзыва права: {str(e)}"

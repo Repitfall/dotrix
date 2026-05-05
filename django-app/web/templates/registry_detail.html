@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+{% block title %}Просмотр реестра{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- ===== ЛЕВАЯ ПАНЕЛЬ: РАЗДЕЛЫ ===== -->
+    <div class="col-md-3">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="mb-0" id="registry-name">Реестр</h5>
+            <a id="edit-registry-btn" href="#" class="btn btn-outline-warning btn-sm" title="Редактировать разделы и права">
+                <i class="bi bi-gear"></i> Ред.
+            </a>
+        </div>
+        <div class="list-group shadow-sm" id="section-list">
+            <span class="list-group-item text-muted">Загрузка разделов...</span>
+        </div>
+    </div>
+
+    <!-- ===== ПРАВАЯ ПАНЕЛЬ: ПОИСК, ФИЛЬТР, МАТРИЦА ===== -->
+    <div class="col-md-9">
+        <!-- Панель поиска и фильтра -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-body py-2">
+                <div class="row g-2">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="search-input" placeholder="Поиск по названию...">
+                            <button class="btn btn-primary" id="search-btn" title="Найти">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#filterModal" title="Расширенные фильтры">
+                            <i class="bi bi-funnel"></i> Фильтры
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Матрица прав -->
+        <div class="card shadow-sm">
+            <div class="card-body p-2" id="matrix-container">
+                <div class="text-center text-muted py-4">Выберите раздел для отображения матрицы прав</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно расширенных фильтров -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Фильтры</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" id="filterTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="nodes-tab" data-bs-toggle="tab" data-bs-target="#nodes-filter" type="button" role="tab">Узлы</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="objects-tab" data-bs-toggle="tab" data-bs-target="#objects-filter" type="button" role="tab">Объекты</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groups-filter" type="button" role="tab">Группы</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <!-- Узлы -->
+                    <div class="tab-pane fade show active" id="nodes-filter">
+                        <div class="mb-2">
+                            <input type="text" class="form-control form-control-sm" id="node-search" placeholder="Поиск узлов...">
+                        </div>
+                        <div id="node-filter-list" style="max-height: 250px; overflow-y: auto;"></div>
+                    </div>
+                    <!-- Объекты -->
+                    <div class="tab-pane fade" id="objects-filter">
+                        <div class="mb-2">
+                            <input type="text" class="form-control form-control-sm" id="object-search" placeholder="Поиск объектов...">
+                        </div>
+                        <div id="object-filter-list" style="max-height: 250px; overflow-y: auto;"></div>
+                    </div>
+                    <!-- Группы -->
+                    <div class="tab-pane fade" id="groups-filter">
+                        <div id="group-filter-list" style="max-height: 250px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="reset-filters-btn">Сбросить все фильтры</button>
+                <button type="button" class="btn btn-primary" id="apply-filter">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const registryId = window.location.pathname.split('/').filter(Boolean).pop();
+let currentSectionId = null;
+let allData = { nodes: [], objects: [], types: [], rights: [], groups: [] };
+let selectedNodeIds = new Set();
+let selectedObjectIds = new Set();
+let selectedGroupIds = new Set();
+
+// Глобальные данные для матрицы
+let currentRows = [];
+let currentGroups = [];
+let currentRights = [];
+
+// ===================== ИНИЦИАЛИЗАЦИЯ =====================
+(async function init() {
+    try {
+        const resp = await fetch(`/api/v1/registries/${registryId}/`, { credentials: 'include' });
+        if (!resp.ok) throw new Error('Реестр не найден');
+        const reg = await resp.json();
+        document.getElementById('registry-name').textContent = `Реестр «${reg.name}»`;
+        document.getElementById('edit-registry-btn').href = `/registries/${registryId}/edit/`;
+
+        await loadSections();
+        const firstSection = document.querySelector('#section-list .list-group-item-action');
+        if (firstSection) firstSection.click();
+    } catch (err) {
+        document.getElementById('registry-name').textContent = 'Ошибка загрузки';
+    }
+})();
+
+// ===================== РАЗДЕЛЫ =====================
+async function loadSections() {
+    const resp = await fetch(`/api/v1/sections/?registry_id=${registryId}&is_deleted=false`, { credentials: 'include' });
+    const data = await resp.json();
+    const container = document.getElementById('section-list');
+    container.innerHTML = '';
+    if (data.results && data.results.length > 0) {
+        data.results.forEach(sec => {
+            const a = document.createElement('a');
+            a.href = '#';
+            a.className = 'list-group-item list-group-item-action d-flex align-items-center';
+            a.innerHTML = `<i class="bi bi-folder me-2 text-warning"></i> ${sec.name}`;
+            a.dataset.sectionId = sec.id;
+            a.addEventListener('click', function(e) {
+                e.preventDefault();
+                selectSection(sec.id);
+            });
+            container.appendChild(a);
+        });
+    } else {
+        container.innerHTML = '<div class="list-group-item text-muted">Нет разделов</div>';
+    }
+}
+
+function selectSection(sectionId) {
+    currentSectionId = sectionId;
+    document.querySelectorAll('#section-list a').forEach(el => el.classList.remove('active'));
+    const activeEl = document.querySelector(`[data-section-id="${sectionId}"]`);
+    if (activeEl) activeEl.classList.add('active');
+    selectedNodeIds.clear();
+    selectedObjectIds.clear();
+    selectedGroupIds.clear();
+    loadMatrix(sectionId);
+}
+
+// ===================== МАТРИЦА =====================
+async function loadMatrix(sectionId) {
+    const container = document.getElementById('matrix-container');
+    container.innerHTML = '<div class="text-center py-4">Загрузка матрицы...</div>';
+
+    try {
+        const [groupsResp, nodesResp, objectsResp, rightsResp] = await Promise.all([
+            fetch(`/api/v1/groups/?registry_id=${registryId}&is_deleted=false&limit=200`, { credentials: 'include' }),
+            fetch(`/api/v1/nodes/?section_id=${sectionId}&is_deleted=false&limit=200`, { credentials: 'include' }),
+            fetch(`/api/v1/objects/?section_id=${sectionId}&is_deleted=false&limit=500`, { credentials: 'include' }),
+            fetch(`/api/v1/rights/?section_id=${sectionId}&limit=500`, { credentials: 'include' })
+        ]);
+
+        allData.groups = (await groupsResp.json()).results || [];
+        allData.nodes = (await nodesResp.json()).results || [];
+        allData.objects = (await objectsResp.json()).results || [];
+        allData.rights = (await rightsResp.json()).results || [];
+
+        allData.types = [];
+        for (const obj of allData.objects) {
+            const typesResp = await fetch(`/api/v1/types/?object_id=${obj.id}&is_deleted=false&limit=100`, { credentials: 'include' });
+            const typesData = await typesResp.json();
+            if (typesData.results) allData.types = allData.types.concat(typesData.results);
+        }
+
+        applyFiltersAndRender();
+    } catch (err) {
+        container.innerHTML = `<div class="alert alert-danger">Ошибка загрузки: ${err.message}</div>`;
+    }
+}
+
+function applyFiltersAndRender() {
+    let filteredNodes = allData.nodes;
+    if (selectedNodeIds.size > 0) filteredNodes = filteredNodes.filter(n => selectedNodeIds.has(n.id));
+
+    let filteredObjects = allData.objects.filter(obj => filteredNodes.some(n => n.id === obj.node));
+    if (selectedObjectIds.size > 0) filteredObjects = filteredObjects.filter(obj => selectedObjectIds.has(obj.id));
+
+    let filteredGroups = allData.groups;
+    if (selectedGroupIds.size > 0) filteredGroups = filteredGroups.filter(g => selectedGroupIds.has(g.id));
+    currentGroups = filteredGroups;
+
+    const filteredObjectIds = new Set(filteredObjects.map(o => o.id));
+    const filteredTypes = allData.types.filter(t => filteredObjectIds.has(t.object));
+
+    const filteredTypeIds = new Set(filteredTypes.map(t => t.id));
+    const filteredGroupIds = new Set(filteredGroups.map(g => g.id));
+    currentRights = allData.rights.filter(r => filteredTypeIds.has(r.access_type) && filteredGroupIds.has(r.group));
+
+    const nodeMap = new Map();
+    filteredNodes.forEach(node => nodeMap.set(node.id, { ...node, objects: [] }));
+    filteredObjects.forEach(obj => {
+        if (nodeMap.has(obj.node)) nodeMap.get(obj.node).objects.push(obj);
+    });
+
+    currentRows = [];
+    nodeMap.forEach(node => {
+        if (node.objects.length === 0) {
+            currentRows.push({ nodeName: node.name, nodeIp: node.ip || '', objPath: '', objDesc: '', typeName: '', typeId: null });
+        } else {
+            node.objects.forEach(obj => {
+                const objTypes = filteredTypes.filter(t => t.object === obj.id);
+                if (objTypes.length === 0) {
+                    currentRows.push({ nodeName: node.name, nodeIp: node.ip || '', objPath: obj.resource_path, objDesc: obj.description || '', typeName: '', typeId: null });
+                } else {
+                    objTypes.forEach(t => {
+                        currentRows.push({ nodeName: node.name, nodeIp: node.ip || '', objPath: obj.resource_path, objDesc: obj.description || '', typeName: t.template_name, typeId: t.id });
+                    });
+                }
+            });
+        }
+    });
+
+    renderMatrix(currentRows);
+}
+
+function renderMatrix(rows) {
+    const container = document.getElementById('matrix-container');
+    if (!rows || rows.length === 0) {
+        container.innerHTML = '<div class="text-muted text-center py-4">Нет данных для отображения</div>';
+        return;
+    }
+
+    const groups = currentGroups;
+    let headerRow = ['Узел', 'IP', 'Путь', 'Описание', 'Тип доступа'];
+    groups.forEach(g => headerRow.push(g.name));
+
+    let html = '<div class="table-responsive"><table class="table table-bordered table-sm align-middle mb-0">';
+    html += '<thead class="table-light"><tr>';
+    headerRow.forEach(h => html += `<th>${h}</th>`);
+    html += '</tr></thead><tbody>';
+
+    const rowSpans = rows.map(r => ({ nodeKey: r.nodeName + r.nodeIp, objKey: r.objPath + r.objDesc }));
+    const nodeSpans = [], objSpans = [];
+    let i = 0;
+    while (i < rows.length) {
+        let j = i;
+        while (j < rows.length && rowSpans[j].nodeKey === rowSpans[i].nodeKey) j++;
+        nodeSpans.push({ start: i, end: j - 1 });
+        let k = i;
+        while (k < j) {
+            let l = k;
+            while (l < j && rowSpans[l].objKey === rowSpans[k].objKey) l++;
+            objSpans.push({ start: k, end: l - 1 });
+            k = l;
+        }
+        i = j;
+    }
+
+    for (let idx = 0; idx < rows.length; idx++) {
+        const r = rows[idx];
+        html += '<tr>';
+
+        const nodeSpan = nodeSpans.find(s => s.start <= idx && idx <= s.end);
+        if (nodeSpan && idx === nodeSpan.start) {
+            html += `<td rowspan="${nodeSpan.end - nodeSpan.start + 1}" class="fw-bold align-top">${r.nodeName}</td>`;
+            html += `<td rowspan="${nodeSpan.end - nodeSpan.start + 1}" class="text-muted small align-top">${r.nodeIp}</td>`;
+        }
+
+        const objSpan = objSpans.find(s => s.start <= idx && idx <= s.end);
+        if (objSpan && idx === objSpan.start) {
+            html += `<td rowspan="${objSpan.end - objSpan.start + 1}" class="align-top"><code>${r.objPath}</code></td>`;
+            html += `<td rowspan="${objSpan.end - objSpan.start + 1}" class="text-muted small align-top">${r.objDesc}</td>`;
+        }
+
+        html += `<td class="align-top"><span class="badge bg-secondary">${r.typeName || '—'}</span></td>`;
+
+        groups.forEach(group => {
+            const hasRight = r.typeId && currentRights.some(rgt => rgt.access_type === r.typeId && rgt.group === group.id);
+            html += `<td class="text-center align-top">${hasRight ? '<span class="text-success fw-bold">+</span>' : ''}</td>`;
+        });
+
+        html += '</tr>';
+    }
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+// ===================== ФИЛЬТРЫ =====================
+async function loadFilterData() {
+    if (!currentSectionId) return;
+    buildNodeFilterList();
+    buildObjectFilterList();
+    buildGroupFilterList();
+}
+
+function buildNodeFilterList() {
+    const list = document.getElementById('node-filter-list');
+    const search = document.getElementById('node-search').value.toLowerCase();
+    const filtered = allData.nodes.filter(n => n.name.toLowerCase().includes(search));
+    list.innerHTML = '';
+    filtered.forEach(node => {
+        const div = document.createElement('div');
+        div.className = 'form-check';
+        div.innerHTML = `
+            <input class="form-check-input node-checkbox" type="checkbox" value="${node.id}" id="node-${node.id}" ${selectedNodeIds.has(node.id) ? 'checked' : ''}>
+            <label class="form-check-label" for="node-${node.id}">${node.name}</label>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function buildObjectFilterList() {
+    const list = document.getElementById('object-filter-list');
+    const search = document.getElementById('object-search').value.toLowerCase();
+    const filtered = allData.objects.filter(obj => obj.resource_path.toLowerCase().includes(search));
+    list.innerHTML = '';
+    filtered.forEach(obj => {
+        const div = document.createElement('div');
+        div.className = 'form-check';
+        div.innerHTML = `
+            <input class="form-check-input object-checkbox" type="checkbox" value="${obj.id}" id="obj-${obj.id}" ${selectedObjectIds.has(obj.id) ? 'checked' : ''}>
+            <label class="form-check-label" for="obj-${obj.id}">${obj.resource_path} <small class="text-muted">(${obj.node_name || ''})</small></label>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function buildGroupFilterList() {
+    const list = document.getElementById('group-filter-list');
+    list.innerHTML = '';
+    allData.groups.forEach(group => {
+        const div = document.createElement('div');
+        div.className = 'form-check';
+        div.innerHTML = `
+            <input class="form-check-input group-checkbox" type="checkbox" value="${group.id}" id="grp-${group.id}" ${selectedGroupIds.has(group.id) ? 'checked' : ''}>
+            <label class="form-check-label" for="grp-${group.id}">${group.name}</label>
+        `;
+        list.appendChild(div);
+    });
+}
+
+document.getElementById('node-search').addEventListener('input', buildNodeFilterList);
+document.getElementById('object-search').addEventListener('input', buildObjectFilterList);
+
+document.getElementById('apply-filter').addEventListener('click', function() {
+    selectedNodeIds.clear();
+    document.querySelectorAll('.node-checkbox:checked').forEach(cb => selectedNodeIds.add(parseInt(cb.value)));
+    selectedObjectIds.clear();
+    document.querySelectorAll('.object-checkbox:checked').forEach(cb => selectedObjectIds.add(parseInt(cb.value)));
+    selectedGroupIds.clear();
+    document.querySelectorAll('.group-checkbox:checked').forEach(cb => selectedGroupIds.add(parseInt(cb.value)));
+    bootstrap.Modal.getInstance(document.getElementById('filterModal')).hide();
+    applyFiltersAndRender();
+});
+
+document.getElementById('reset-filters-btn').addEventListener('click', function() {
+    selectedNodeIds.clear();
+    selectedObjectIds.clear();
+    selectedGroupIds.clear();
+    document.querySelectorAll('#filterModal input[type=checkbox]').forEach(cb => cb.checked = false);
+    document.getElementById('node-search').value = '';
+    document.getElementById('object-search').value = '';
+    buildNodeFilterList();
+    buildObjectFilterList();
+    buildGroupFilterList();
+});
+
+document.getElementById('filterModal').addEventListener('show.bs.modal', loadFilterData);
+
+// ===================== ПОИСК =====================
+document.getElementById('search-btn').addEventListener('click', performSearch);
+document.getElementById('search-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') performSearch();
+});
+document.getElementById('search-input').addEventListener('input', function() {
+    if (this.value.trim() === '') {
+        renderMatrix(currentRows);
+    }
+});
+
+function performSearch() {
+    const query = document.getElementById('search-input').value.trim().toLowerCase();
+    if (!currentRows.length) {
+        alert('Сначала выберите раздел и дождитесь загрузки данных.');
+        return;
+    }
+    if (!query) {
+        renderMatrix(currentRows);
+        return;
+    }
+    const filtered = currentRows.filter(r => Object.values(r).some(val => val && val.toString().toLowerCase().includes(query)));
+    if (filtered.length === 0) {
+        document.getElementById('matrix-container').innerHTML = '<div class="text-muted text-center py-4">Ничего не найдено</div>';
+    } else {
+        renderMatrix(filtered);
+    }
+}
+</script>
+{% endblock %}

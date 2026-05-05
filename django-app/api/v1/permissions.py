@@ -25,6 +25,9 @@ class CanViewRegistry(permissions.BasePermission):
     """Разрешение на просмотр реестра доступа"""
 
     def has_object_permission(self, request, view, obj):
+        if request.user.is_staff:
+            return True
+
         if hasattr(obj, 'registry_id'):
             registry_id = obj.registry_id
         elif hasattr(obj, 'section'):
@@ -43,11 +46,13 @@ class CanViewRegistry(permissions.BasePermission):
 
 class CanEditRegistry(permissions.BasePermission):
     """Разрешение на редактирование реестра доступа"""
-    # Может понадобиться в будущем
 
     def has_object_permission(self, request, view, obj):
         if not request.user or not request.user.is_authenticated:
             return False
+
+        if request.user.is_staff:
+            return True
 
         if request.user.access_groups.filter(
             owned_registries=obj,
@@ -58,7 +63,6 @@ class CanEditRegistry(permissions.BasePermission):
 
 class CanManageGroup(permissions.BasePermission):
     """Разрешение на управление группой"""
-    # Может понадобиться в будущем
 
     def has_object_permission(self, request, view, obj):
         if not request.user or not request.user.is_authenticated:

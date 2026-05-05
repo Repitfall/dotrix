@@ -79,6 +79,8 @@ class AccessGroupCreateInputSerializer(serializers.Serializer):
         return value
 
     def validate_parent_group_id(self, value):
+        if value is None or value == '':
+            return None
         try:
             parent = AccessGroup.objects.get(id=value, is_deleted=False)
         except AccessGroup.DoesNotExist:
@@ -182,6 +184,8 @@ class AccessGroupUpdateInputSerializer(serializers.Serializer):
     )
 
     def validate_parent_group_id(self, value):
+        if value is None or value == '':
+            return None
         if value:
             try:
                 parent = AccessGroup.objects.get(id=value, is_deleted=False)

@@ -1,23 +1,106 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="ru">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
-        <style>{% block style %}{% endblock %}</style>
-        <title>{% block title %}Страница{% endblock %} | Дотрикс</title>
-    </head>
-    <body class="min-vh-100">
-        <header class="container border-bottom">
-            <p>Тестовая шапка сайта</p>
-        </header>
-        <main class="container">
-            {% block main %}
-            {% endblock %}
-            <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-            <script>{% block script %}{% endblock %}</script>
-        </main>
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dotrix IAM{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Dotrix IAM</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto" id="nav-links"></ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        {% block content %}{% endblock %}
+    </div>
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+        // Автоматическое обновление токена при 401 (без редиректа на login с самой страницы login)
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            let response = await originalFetch(...args);
+            if (response.status === 401) {
+                // Не пытаемся обновить токен, если уже на странице входа
+                if (window.location.pathname === '/login/') {
+                    return response;
+                }
+                const refreshResp = await originalFetch('/api/v1/refresh/', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (refreshResp.ok) {
+                    // токен обновлён, повторяем запрос
+                    response = await originalFetch(...args);
+                } else {
+                    // рефреш не удался – только если мы не на login, редирект
+                    if (window.location.pathname !== '/login/') {
+                        window.location.href = '/login/';
+                    }
+                    throw new Error('Session expired');
+                }
+            }
+            return response;
+        };
+
+        // Проверка авторизации (используется только вне страницы входа)
+        async function checkAuth() {
+            try {
+                const resp = await fetch('/api/v1/registries/', { credentials: 'include' });
+                return resp.ok;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Обновление навигации: на login показываем только "Вход", на остальных – в зависимости от авторизации
+        async function updateNav() {
+            const nav = document.getElementById('nav-links');
+            if (window.location.pathname === '/login/') {
+                nav.innerHTML = `<li class="nav-item"><a class="nav-link" href="/login/">Вход</a></li>`;
+                return;
+            }
+            const authenticated = await checkAuth();
+            if (authenticated) {
+                nav.innerHTML = `
+                    <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/registries/">Реестры</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/profile/">Профиль</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="logout()">Выйти</a></li>
+                `;
+            } else {
+                nav.innerHTML = `<li class="nav-item"><a class="nav-link" href="/login/">Вход</a></li>`;
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/v1/logout/', { method: 'POST', credentials: 'include' });
+            window.location.href = '/login/';
+        }
+
+        // Инициализация
+        (async function() {
+            await updateNav();
+            if (window.location.pathname !== '/login/') {
+                const authenticated = await checkAuth();
+                if (!authenticated) {
+                    // если мы не на странице входа и неавторизованы – редирект
+                    window.location.href = '/login/';
+                    return;
+                }
+            }
+        })();
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
 </html>

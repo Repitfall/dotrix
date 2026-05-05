@@ -33,12 +33,12 @@ class AccessRightModelSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'access_type', 'access_type_object_name', 'access_type_template_name',
             'group', 'group_name', 'granted_at', 'granted_by', 'granted_by_username',
-            'expires_at', 'registry_name', 'is_active'
+            'expires_at', 'registry_name', 'is_active', 'ticket'
         ]
         read_only_fields = ['id', 'granted_at', 'granted_by']
 
     def get_is_active(self, obj):
-        """Активно ли право (не истекло и не отозвано — если отозвано, записи нет)"""
+        """Активно ли право (не истекло)"""
         if obj.expires_at:
             return obj.expires_at > timezone.now()
         return True
@@ -58,9 +58,15 @@ class AccessRightCreateInputSerializer(serializers.Serializer):
         required=False,
         allow_null=True
     )
+    ticket = serializers.CharField(
+        max_length=9,
+        required=False,
+        allow_null=True,
+        help_text="Номер тикета"
+    )
 
     def validate_access_type_id(self, value):
-        if not AccessType.objects.filter(id=value, is_deleted=False).exists():
+        if not AccessType.objects.filter(id=value).exists():
             raise serializers.ValidationError(
                 "Тип доступа не найден или удалён")
         return value

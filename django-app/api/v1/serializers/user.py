@@ -88,22 +88,27 @@ class UserCreateOutputSerializer(serializers.Serializer):
     )
     last_name = serializers.CharField(
         help_text="Фамилия пользователя",
-        max_length=32
+        max_length=32,
+        required=False
     )
     first_name = serializers.CharField(
         help_text="Имя пользователя",
-        max_length=32
+        max_length=32,
+        required=False
     )
     patronymic = serializers.CharField(
         help_text="Отчество пользователя",
-        max_length=32
+        max_length=32,
+        required=False
     )
     post = serializers.CharField(
         help_text="Должность пользователя",
-        max_length=128
+        max_length=128,
+        required=False
     )
     is_active = serializers.BooleanField(
-        help_text="Активация аккаунта"
+        help_text="Активация аккаунта",
+        required=False
     )
 
 

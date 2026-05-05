@@ -34,15 +34,6 @@ class AccessTypeModelSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id']
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-
-        request = self.context.get('request')
-
-        if request and request.user.is_staff:
-            representation['is_deleted'] = instance.is_deleted
-        return representation
-
 
 class AccessTypeCreateInputSerializer(serializers.Serializer):
     """Сериализатор создания типа доступа"""
@@ -55,13 +46,13 @@ class AccessTypeCreateInputSerializer(serializers.Serializer):
     )
 
     def validate_object_id(self, value):
-        if not AccessObject.objects.filter(id=value, is_deleted=False).exists():
+        if not AccessObject.objects.filter(id=value).exists():
             raise serializers.ValidationError(
                 "Объект доступа не найден или удалён")
         return value
 
     def validate_template_id(self, value):
-        if not AccessTypeTemplate.objects.filter(id=value, is_deleted=False).exists():
+        if not AccessTypeTemplate.objects.filter(id=value).exists():
             raise serializers.ValidationError(
                 "Шаблон типа доступа не найден или удалён")
         return value
@@ -69,8 +60,7 @@ class AccessTypeCreateInputSerializer(serializers.Serializer):
     def validate(self, data):
         if AccessType.objects.filter(
             object_id=data['object_id'],
-            template_id=data['template_id'],
-            is_deleted=False
+            template_id=data['template_id']
         ).exists():
             raise serializers.ValidationError(
                 "Тип доступа для данного объекта и шаблона уже существует"

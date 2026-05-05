@@ -23,7 +23,7 @@ class AuthService:
             return None, "Учетная запись отключена. Обратитесь к администратору."
 
         if user.reset_password and not change_password:
-            return None, "Учетная запись отключена. Сбросьте свой пароль для активации."
+            return None, "Учетная запись отключена. Смените свой пароль для активации."
 
         return user, None
 

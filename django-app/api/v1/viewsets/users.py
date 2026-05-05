@@ -107,7 +107,7 @@ class UserViewSet(viewsets.GenericViewSet):
             )
 
         user, password, error = UserService.create_user(
-            input_serializer.validated_data
+            input_serializer.validated_data, request.user
         )
 
         if error:
@@ -160,7 +160,7 @@ class UserViewSet(viewsets.GenericViewSet):
             )
 
         updated_user, error = UserService.update_user(
-            user, input_serializer.validated_data)
+            user, input_serializer.validated_data, request.user)
 
         if error:
             return Response(
@@ -201,7 +201,7 @@ class UserViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         updated_user, error = UserService.update_user(
-            user, input_serializer.validated_data)
+            user, input_serializer.validated_data, request.user)
 
         if error:
             return Response(
@@ -242,7 +242,7 @@ class UserViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        success, error = UserService.delete_user(user)
+        success, error = UserService.delete_user(user, request.user)
 
         if error:
             return Response(
@@ -271,7 +271,7 @@ class UserViewSet(viewsets.GenericViewSet):
     def restore(self, request, pk=None):
         user = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, user)
-        success, error = UserService.restore_user(user)
+        success, error = UserService.restore_user(user, request.user)
 
         if error:
             return Response(
@@ -315,7 +315,7 @@ class UserViewSet(viewsets.GenericViewSet):
         user = get_object_or_404(self.get_queryset(), id=pk)
         self.check_object_permissions(request, user)
 
-        password, error = UserService.reset_password(user)
+        password, error = UserService.reset_password(user, request.user)
 
         if error:
             return Response(

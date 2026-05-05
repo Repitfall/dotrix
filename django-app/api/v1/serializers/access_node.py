@@ -101,7 +101,7 @@ class AccessNodeCreateInputSerializer(serializers.Serializer):
                     if ip != resolved_ip:
                         warnings.append({
                             'field': 'ip',
-                            'message': f'IP {ip} не соответствует домену {name} (разрешился в {resolved_ip})'
+                            'message': f'IP {ip} не соответствует домену {name} (принадлежит {resolved_ip})'
                         })
                         data['ip_validated'] = False
                         data['last_validation_error'] = warnings[-1]['message']
@@ -112,7 +112,7 @@ class AccessNodeCreateInputSerializer(serializers.Serializer):
             except socket.gaierror as e:
                 warnings.append({
                     'field': 'name',
-                    'message': f'Домен {name} не разрешается: {str(e)}'
+                    'message': f'{str(e)}'
                 })
                 data['ip_validated'] = False
                 data['last_validation_error'] = warnings[-1]['message']
@@ -218,7 +218,7 @@ class AccessNodeUpdateInputSerializer(serializers.Serializer):
                 elif ip != resolved_ip:
                     warnings.append({
                         'field': 'ip',
-                        'message': f'IP {ip} не соответствует домену {name} (разрешился в {resolved_ip})'
+                        'message': f'IP {ip} не соответствует домену {name} (принадлежит {resolved_ip})'
                     })
                     data['ip'] = ip
                     data['ip_validated'] = False
@@ -232,7 +232,7 @@ class AccessNodeUpdateInputSerializer(serializers.Serializer):
                 if update_ip:
                     warnings.append({
                         'field': 'name',
-                        'message': f'Домен {name} не разрешается: {str(e)}'
+                        'message': f'{str(e)}'
                     })
                     data['ip_validated'] = False
                     data['last_validation_error'] = warnings[-1]['message']

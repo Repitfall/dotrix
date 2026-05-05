@@ -1,0 +1,974 @@
+{% extends "base.html" %}
+{% block title %}Редактирование реестра{% endblock %}
+{% block extra_head %}
+<style>
+    /* Активный раздел в сайдбаре: белый текст */
+    .list-group-item.active a,
+    .list-group-item.active a:hover {
+        color: #fff !important;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="row">
+
+    <div id="global-alert" class="alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3 d-none" style="z-index:9999; max-width:600px;" role="alert">
+        <span id="global-alert-msg"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- ===== ЛЕВАЯ ПАНЕЛЬ: РАЗДЕЛЫ ===== -->
+    <div class="col-md-3">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="mb-0" id="registry-name">Реестр</h5>
+            <a href="/registries/" class="btn btn-outline-secondary btn-sm" title="Вернуться к реестрам">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+        </div>
+        <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="openSectionModal()">
+            <i class="bi bi-plus-lg"></i> Добавить раздел
+        </button>
+        <div class="list-group shadow-sm" id="section-edit-list">
+            <span class="list-group-item text-muted">Загрузка...</span>
+        </div>
+    </div>
+
+    <!-- ===== ПРАВАЯ ОБЛАСТЬ: УЗЛЫ, ОБЪЕКТЫ, ТИПЫ, ГРУППЫ ===== -->
+    <div class="col-md-9" id="section-editor">
+        <div class="text-center text-muted py-4">Выберите раздел для управления содержимым</div>
+    </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- МОДАЛЬНОЕ ОКНО РАЗДЕЛА (создание / редактирование)                -->
+<!-- ================================================================ -->
+<div class="modal fade" id="sectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sectionModalTitle">Новый раздел</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="section-id">
+                <div class="mb-3">
+                    <label for="section-name" class="form-label">Название</label>
+                    <input type="text" class="form-control" id="section-name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="section-desc" class="form-label">Описание</label>
+                    <textarea class="form-control" id="section-desc" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="save-section-btn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- МОДАЛЬНОЕ ОКНО УЗЛА (создание / редактирование) -->
+<!-- ================================================================ -->
+<div class="modal fade" id="nodeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nodeModalTitle">Узел</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="node-id">
+                <div class="mb-3">
+                    <label for="node-name" class="form-label">Доменное имя</label>
+                    <input type="text" class="form-control" id="node-name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="node-ip" class="form-label">IP-адрес</label>
+                    <input type="text" class="form-control" id="node-ip">
+                </div>
+                <div class="mb-3">
+                    <label for="node-desc" class="form-label">Описание</label>
+                    <textarea class="form-control" id="node-desc" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="save-node-btn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно объекта -->
+<div class="modal fade" id="objectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="objectModalTitle">Новый объект</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="object-id">
+                <input type="hidden" id="object-node-id">
+                <div class="mb-3">
+                    <label for="object-name" class="form-label">Название объекта</label>
+                    <input type="text" class="form-control" id="object-name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="object-resource" class="form-label">Путь к ресурсу</label>
+                    <input type="text" class="form-control" id="object-resource" required>
+                </div>
+                <div class="mb-3">
+                    <label for="object-desc" class="form-label">Описание</label>
+                    <textarea class="form-control" id="object-desc" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="save-object-btn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно типа доступа -->
+<div class="modal fade" id="typeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="typeModalTitle">Новый тип доступа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="type-id">
+                <input type="hidden" id="type-object-id">
+                <div class="mb-3">
+                    <label for="type-template" class="form-label">Шаблон типа доступа</label>
+                    <select class="form-select" id="type-template"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="save-type-btn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно группы -->
+<div class="modal fade" id="groupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="groupModalTitle">Новая группа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="group-id">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="group-name" class="form-label">Название</label>
+                        <input type="text" class="form-control" id="group-name" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="group-parent" class="form-label">Родительская группа</label>
+                        <select class="form-select" id="group-parent">
+                            <option value="">Нет</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="group-desc" class="form-label">Описание</label>
+                    <textarea class="form-control" id="group-desc" rows="2"></textarea>
+                </div>
+                <!-- Выбор пользователей -->
+                <div class="mb-3">
+                    <label class="form-label">Пользователи</label>
+                    <div class="mb-2"><input type="text" class="form-control form-control-sm" id="user-search" placeholder="Поиск пользователя..."></div>
+                    <div id="group-users-select" style="max-height:150px;overflow-y:auto;"></div>
+                </div>
+                <!-- Выбор руководимых реестров (только для админов) -->
+                <div class="mb-3" id="group-owned-registries-block" style="display:none;">
+                    <label class="form-label">Руководит реестрами</label>
+                    <div id="group-registries-select" style="max-height:150px;overflow-y:auto;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="save-group-btn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Подтверждение</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="confirm-delete-message"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-danger" id="confirm-delete-btn">Удалить</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function showError(message) {
+    const alert = document.getElementById('global-alert');
+    document.getElementById('global-alert-msg').textContent = message;
+    alert.classList.remove('d-none');
+    setTimeout(() => alert.classList.add('d-none'), 5000);
+}
+
+function showSuccess(message) {
+    const alert = document.getElementById('global-alert');
+    document.getElementById('global-alert-msg').textContent = message;
+    alert.className = alert.className.replace('alert-danger', 'alert-success');
+    alert.classList.remove('d-none');
+    setTimeout(() => alert.classList.add('d-none'), 3000);
+}
+
+let deleteCallback = null;
+function showConfirmDelete(message, callback) {
+    document.getElementById('confirm-delete-message').textContent = message;
+    deleteCallback = callback;
+    (new bootstrap.Modal(document.getElementById('confirmDeleteModal'))).show();
+}
+document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+    if (deleteCallback) { deleteCallback(); deleteCallback = null; bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide(); }
+});
+
+const registryId = window.location.pathname.split('/').filter(Boolean)[1];
+let currentSectionId = null;
+
+// ===================== ИНИЦИАЛИЗАЦИЯ =====================
+(async function init() {
+    try {
+        const resp = await fetch('/api/v1/users/profile/', { credentials: 'include' });
+        if (resp.ok) {
+            const user = await resp.json();
+            if (!user.is_staff) {
+                window.location.href = `/registries/${registryId}/`;
+                return;
+            }
+        } else {
+            window.location.href = '/login/';
+            return;
+        }
+    } catch (e) {
+        window.location.href = '/login/';
+        return;
+    }
+    await loadRegistryInfo();
+    await loadSections();
+})();
+
+async function loadRegistryInfo() {
+    try {
+        const resp = await fetch(`/api/v1/registries/${registryId}/`, { credentials: 'include' });
+        if (!resp.ok) throw new Error('Реестр не найден');
+        const reg = await resp.json();
+        document.getElementById('registry-name').textContent = `Реестр «${reg.name}»`;
+    } catch (err) {
+        document.getElementById('registry-name').textContent = 'Ошибка загрузки';
+    }
+}
+
+// ===================== РАЗДЕЛЫ =====================
+async function loadSections() {
+    const resp = await fetch(`/api/v1/sections/?registry_id=${registryId}&is_deleted=false`, { credentials: 'include' });
+    const data = await resp.json();
+    const container = document.getElementById('section-edit-list');
+    container.innerHTML = '';
+    if (data.results && data.results.length > 0) {
+        data.results.forEach(sec => {
+            const div = document.createElement('div');
+            div.className = 'list-group-item d-flex justify-content-between align-items-center';
+            div.innerHTML = `
+                <a href="#" class="flex-grow-1 text-decoration-none" onclick="selectSection(${sec.id}, '${sec.name}')">${sec.name}</a>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" onclick="event.stopPropagation(); openSectionModal(${sec.id}, '${sec.name}', '${sec.description || ''}')" title="Редактировать">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="event.stopPropagation(); deleteSection(${sec.id})" title="Удалить">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    } else {
+        container.innerHTML = '<span class="list-group-item text-muted">Нет разделов</span>';
+    }
+}
+
+// --- Модальное окно раздела ---
+function openSectionModal(id = null, name = '', desc = '') {
+    document.getElementById('section-id').value = id || '';
+    document.getElementById('section-name').value = name;
+    document.getElementById('section-desc').value = desc;
+    document.getElementById('sectionModalTitle').textContent = id ? 'Редактировать раздел' : 'Новый раздел';
+    const modal = new bootstrap.Modal(document.getElementById('sectionModal'));
+    modal.show();
+}
+
+document.getElementById('save-section-btn').addEventListener('click', async function() {
+    const id = document.getElementById('section-id').value;
+    const name = document.getElementById('section-name').value.trim();
+    const description = document.getElementById('section-desc').value.trim();
+    if (!name) return showError('Введите название раздела');
+
+    const url = id ? `/api/v1/sections/${id}/` : '/api/v1/sections/';
+    const method = id ? 'PUT' : 'POST';
+    const body = JSON.stringify({ name, description, registry_id: registryId });
+    const resp = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body });
+    if (resp.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('sectionModal')).hide();
+        loadSections();
+    } else {
+        const err = await resp.json();
+        showError(err.detail || 'Ошибка сохранения раздела');
+    }
+});
+
+async function deleteSection(id) {
+    showConfirmDelete('Удалить раздел и всё его содержимое?', async () => {
+        const resp = await fetch(`/api/v1/sections/${id}/`, { method: 'DELETE', credentials: 'include' });
+        if (resp.ok) {
+            loadSections();
+            document.getElementById('section-editor').innerHTML = '<div class="text-center text-muted py-4">Выберите раздел для управления содержимым</div>';
+        } else {
+            showError('Ошибка удаления раздела');
+        }
+    });
+}
+
+// ===================== УЗЛЫ И АККОРДЕОН =====================
+function selectSection(sectionId, sectionName) {
+    currentSectionId = sectionId;
+    // Подсветка раздела в сайдбаре
+    document.querySelectorAll('#section-edit-list a').forEach(el => el.parentElement.classList.remove('active'));
+    const links = document.querySelectorAll('#section-edit-list a');
+    links.forEach(a => { if (a.textContent === sectionName) a.parentElement.classList.add('active'); });
+
+    const editor = document.getElementById('section-editor');
+    editor.innerHTML = `
+        <ul class="nav nav-tabs mb-3" id="editorTabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#nodesTab" type="button">Узлы и объекты</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#groupsTab" type="button">Группы</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#rightsTab" type="button">Права</button></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="nodesTab">
+                <div id="nodes-content">Загрузка узлов...</div>
+            </div>
+            <div class="tab-pane fade" id="groupsTab">
+                <div id="groups-content">Загрузка групп...</div>
+            </div>
+            <div class="tab-pane fade" id="rightsTab">
+                <div id="rights-content"></div>
+            </div>
+        </div>
+    `;
+
+    // Загружаем содержимое вкладок
+    loadNodesForSection(sectionId);   // в #nodes-content
+    loadGroupsTab(sectionId);         // в #groups-content
+    loadRightsTab(sectionId);         // в #rights-content
+}
+
+async function loadNodesForSection(sectionId) {
+    // Ищем контейнер внутри вкладки "Узлы и объекты"
+    const nodesContainer = document.getElementById('nodes-content');
+    if (!nodesContainer) return;  // если нет – не обновляем
+
+    nodesContainer.innerHTML = 'Загрузка узлов...';
+
+    try {
+        const resp = await fetch(`/api/v1/nodes/?section_id=${sectionId}&is_deleted=false`, { credentials: 'include' });
+        const data = await resp.json();
+        const nodes = data.results || [];
+
+        let html = `<div class="d-flex justify-content-between align-items-center mb-2">
+            <span>Узлы (${nodes.length})</span>
+            <button class="btn btn-outline-primary btn-sm" onclick="openNodeModal()"><i class="bi bi-plus-lg"></i> Добавить узел</button>
+        </div>`;
+
+        if (nodes.length === 0) {
+            html += '<div class="text-muted">Нет узлов</div>';
+        } else {
+            html += '<div class="accordion" id="nodesAccordion">';
+            nodes.forEach((node, idx) => {
+                const collapseId = `collapse-node-${node.id}`;
+                html += `
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-${node.id}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <span><strong>${node.name}</strong> <small class="text-muted">${node.ip || 'нет IP'}</small></span>
+                                ${node.ip_validated === false ? '<span class="badge bg-warning text-dark me-3"><i class="bi bi-exclamation-triangle"></i> Ошибка валидации</span>' : ''}
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#nodesAccordion">
+                        <div class="accordion-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <p class="mb-1"><strong>Описание:</strong> ${node.description || 'нет'}</p>
+                                    ${node.last_validation_error ? `<p class="text-danger small mb-1">Ошибка: ${node.last_validation_error}</p>` : ''}
+                                </div>
+                                <div class="btn-group btn-group-sm ms-2">
+                                    <button class="btn btn-outline-secondary" onclick="event.stopPropagation(); openNodeModal(${node.id}, '${node.name}', '${node.ip || ''}', '${node.description || ''}')" title="Редактировать узел"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-outline-danger" onclick="event.stopPropagation(); deleteNode(${node.id})" title="Удалить узел"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </div>
+                            <div id="objects-container-${node.id}">
+                                <div class="text-muted small">Загрузка объектов...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+        nodesContainer.innerHTML = html;
+
+        // Загружаем объекты для каждого узла
+        nodes.forEach(node => loadObjectsForNode(node.id));
+    } catch (err) {
+        nodesContainer.innerHTML = `<div class="alert alert-danger">Ошибка загрузки узлов: ${err.message}</div>`;
+    }
+}
+
+// --- Модальное окно узла ---
+function openNodeModal(id = null, name = '', ip = '', desc = '') {
+    document.getElementById('node-id').value = id || '';
+    document.getElementById('node-name').value = name;
+    document.getElementById('node-ip').value = ip;
+    document.getElementById('node-desc').value = desc;
+    document.getElementById('nodeModalTitle').textContent = id ? 'Редактировать узел' : 'Новый узел';
+    const modal = new bootstrap.Modal(document.getElementById('nodeModal'));
+    modal.show();
+}
+
+document.getElementById('save-node-btn').addEventListener('click', async function() {
+    const id = document.getElementById('node-id').value;
+    const name = document.getElementById('node-name').value.trim();
+    const ip = document.getElementById('node-ip').value.trim();
+    const description = document.getElementById('node-desc').value.trim();
+    if (!name) return showError('Введите доменное имя');
+
+    const url = id ? `/api/v1/nodes/${id}/` : '/api/v1/nodes/';
+    const method = id ? 'PUT' : 'POST';
+    const body = JSON.stringify({ name, ip: ip || null, description, section_id: currentSectionId });
+    const resp = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body });
+    if (resp.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('nodeModal')).hide();
+        loadNodesForSection(currentSectionId);
+    } else {
+        const err = await resp.json();
+        showError(err.detail || 'Ошибка сохранения узла');
+    }
+});
+
+async function deleteNode(id) {
+    showConfirmDelete('Удалить узел и все вложенные объекты?', async () => {
+        const resp = await fetch(`/api/v1/nodes/${id}/`, { method: 'DELETE', credentials: 'include' });
+        if (resp.ok) loadNodesForSection(currentSectionId);
+        else showError('Ошибка удаления узла');
+    });
+}
+
+async function loadObjectsForNode(nodeId) {
+    const container = document.getElementById(`objects-container-${nodeId}`);
+    if (!container) return;
+    try {
+        const resp = await fetch(`/api/v1/objects/?node_id=${nodeId}&is_deleted=false&limit=100`, { credentials: 'include' });
+        const data = await resp.json();
+        const objects = data.results || [];
+        let html = `<div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+            <span class="fw-bold">Объекты (${objects.length})</span>
+            <button class="btn btn-outline-primary btn-sm" onclick="…"><i class="bi bi-plus-lg"></i> Добавить объект</button>
+        </div>`;
+        if (objects.length === 0) {
+            html += '<div class="text-muted small">Нет объектов</div>';
+        } else {
+            html += '<ul class="list-group list-group-flush border rounded">';
+            for (const obj of objects) {
+                // Готовим контейнер для типов с уникальным ID
+                const typesContainerId = `types-list-${obj.id}`;
+                html += `
+                <li class="list-group-item py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <code>${obj.resource_path}</code>
+                            <strong>${obj.name}</strong>${obj.description ? `<br><small class="text-muted">${obj.description}</small>` : ''}
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" onclick="event.stopPropagation(); openObjectModal(${nodeId}, ${obj.id}, '${obj.name}', '${obj.resource_path}', '${obj.description || ''}')" title="Редактировать объект"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-outline-danger" onclick="event.stopPropagation(); deleteObject(${obj.id}, ${nodeId})" title="Удалить объект"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-outline-info" onclick="event.stopPropagation(); openTypeModal(${obj.id})" title="Добавить тип доступа"><i class="bi bi-plus-circle"></i> Тип</button>
+                        </div>
+                    </div>
+                    <div id="${typesContainerId}" class="mt-2">
+                        <span class="text-muted small">Загрузка типов...</span>
+                    </div>
+                </li>`;
+            }
+            html += '</ul>';
+        }
+        container.innerHTML = html;
+        // Автоматически загружаем типы для каждого объекта
+        objects.forEach(obj => loadTypesForObject(obj.id, `types-list-${obj.id}`));
+    } catch (err) {
+        container.innerHTML = '<div class="text-danger small">Ошибка загрузки объектов</div>';
+    }
+}
+
+function openObjectModal(nodeId, id = null, name = '', resource = '', desc = '') {
+    document.getElementById('object-node-id').value = nodeId;
+    document.getElementById('object-id').value = id || '';
+    document.getElementById('object-name').value = name;
+    document.getElementById('object-resource').value = resource;
+    document.getElementById('object-desc').value = desc;
+    document.getElementById('objectModalTitle').textContent = id ? 'Редактировать объект' : 'Новый объект';
+    const modal = new bootstrap.Modal(document.getElementById('objectModal'));
+    modal.show();
+}
+
+document.getElementById('save-object-btn').addEventListener('click', async function() {
+    const id = document.getElementById('object-id').value;
+    const nodeId = document.getElementById('object-node-id').value;
+    const name = document.getElementById('object-name').value.trim();
+    const resource_path = document.getElementById('object-resource').value.trim();
+    const description = document.getElementById('object-desc').value.trim();
+    if (!name || !resource_path) return showError('Введите название и путь к ресурсу');
+
+    const url = id ? `/api/v1/objects/${id}/` : '/api/v1/objects/';
+    const method = id ? 'PUT' : 'POST';
+    const body = JSON.stringify({ name, resource_path, description, node_id: nodeId });
+    const resp = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body });
+    if (resp.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('objectModal')).hide();
+        loadObjectsForNode(nodeId);
+    } else {
+        const err = await resp.json();
+        showError(err.detail || 'Ошибка сохранения объекта');
+    }
+});
+
+async function deleteObject(objId, nodeId) {
+    showConfirmDelete('Удалить объект и все связанные типы доступа?', async () => {
+        const resp = await fetch(`/api/v1/objects/${objId}/`, { method: 'DELETE', credentials: 'include' });
+        if (resp.ok) loadObjectsForNode(nodeId);
+        else showError('Ошибка удаления объекта');
+    });
+}
+
+// ===================== ТИПЫ ДОСТУПА =====================
+async function loadTypesForObject(objectId, listContainerId) {
+    const container = document.getElementById(listContainerId);
+    if (!container) return;
+    try {
+        const resp = await fetch(`/api/v1/types/?object_id=${objectId}&is_deleted=false`, { credentials: 'include' });
+        const data = await resp.json();
+        const types = data.results || [];
+        let html = `<div class="d-flex justify-content-between align-items-center">
+            <span class="small fw-bold">Типы доступа (${types.length})</span>
+        </div>`;
+        if (types.length === 0) {
+            html += '<span class="text-muted small">Нет типов</span>';
+        } else {
+            html += '<ul class="list-group list-group-flush">';
+            types.forEach(t => {
+                html += `
+                <li class="list-group-item py-1 d-flex justify-content-between align-items-center">
+                    <span class="badge bg-secondary">${t.template_name}</span>
+                    <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteType(${t.id}, ${objectId}, '${listContainerId}')"><i class="bi bi-trash"></i></button>
+                </li>`;
+            });
+            html += '</ul>';
+        }
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = '<div class="text-danger small">Ошибка загрузки типов</div>';
+    }
+}
+
+async function openTypeModal(objectId, typeId = null, templateId = null) {
+    document.getElementById('type-object-id').value = objectId;
+    document.getElementById('type-id').value = typeId || '';
+    // Загрузим список шаблонов
+    const resp = await fetch('/api/v1/template_types/?is_deleted=false', { credentials: 'include' });
+    const data = await resp.json();
+    const templates = data.results || [];
+    const select = document.getElementById('type-template');
+    select.innerHTML = '';
+    templates.forEach(tpl => {
+        const option = document.createElement('option');
+        option.value = tpl.id;
+        option.textContent = tpl.name;
+        if (tpl.id === templateId) option.selected = true;
+        select.appendChild(option);
+    });
+    document.getElementById('typeModalTitle').textContent = typeId ? 'Изменить тип доступа' : 'Добавить тип доступа';
+    const modal = new bootstrap.Modal(document.getElementById('typeModal'));
+    modal.show();
+}
+
+document.addEventListener('click', async function(e) {
+    if (e.target && e.target.id === 'save-rights-btn') {
+        const groupId = parseInt(document.getElementById('rights-group-select').value);
+        const ticket = document.getElementById('ticket-number').value.trim();
+        if (!/^\d{9}$/.test(ticket)) {
+            showError('Введите корректный 9-значный номер тикета');
+            return;
+        }
+        const checkboxes = document.querySelectorAll('.right-check');
+        const currentTypeIds = Array.from(checkboxes).filter(cb => cb.checked).map(cb => parseInt(cb.dataset.typeId));
+        const initialTypeIds = window._initialRights || [];
+
+        const toCreate = currentTypeIds.filter(id => !initialTypeIds.includes(id));
+        const toDelete = initialTypeIds.filter(id => !currentTypeIds.includes(id));
+
+        try {
+            // Создаём права
+            for (const typeId of toCreate) {
+                const resp = await fetch('/api/v1/rights/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        access_type_id: typeId,
+                        group_id: groupId,
+                        ticket: ticket
+                    })
+                });
+                if (!resp.ok) throw new Error('Ошибка создания права');
+            }
+            // Удаляем права (находим id записи и отправляем DELETE с revoke_ticket
+            for (const typeId of toDelete) {
+                const rightsResp = await fetch(`/api/v1/rights/?group_id=${groupId}&access_type_id=${typeId}`, { credentials: 'include' });
+                const rightsData = await rightsResp.json();
+                if (rightsData.results && rightsData.results.length > 0) {
+                    const rightId = rightsData.results[0].id;
+                    const delResp = await fetch(`/api/v1/rights/${rightId}/`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ revoke_ticket: ticket })
+                    });
+                    if (!delResp.ok) throw new Error('Ошибка отзыва права');
+                }
+            }
+            showSuccess('Права успешно обновлены');
+            // Перезагружаем матрицу, чтобы отразить изменения
+            if (currentSectionId) {
+                await loadRightsMatrix(currentSectionId, groupId);
+            }
+        } catch (err) {
+            showError('Ошибка при сохранении прав: ' + err.message);
+        }
+    }
+});
+
+// ===================== ГРУППЫ =====================
+async function loadGroupsTab(sectionId) {
+    const container = document.getElementById('groups-content');
+    container.innerHTML = 'Загрузка групп...';
+    try {
+        const resp = await fetch(`/api/v1/groups/?registry_id=${registryId}&is_deleted=false&limit=200`, { credentials: 'include' });
+        const data = await resp.json();
+        const groups = data.results || [];
+        let html = `<div class="d-flex justify-content-between align-items-center mb-2">
+            <span>Группы реестра (${groups.length})</span>
+            <button class="btn btn-outline-primary btn-sm" onclick="openGroupModal()"><i class="bi bi-plus-lg"></i> Добавить группу</button>
+        </div>`;
+        if (groups.length === 0) {
+            html += '<div class="text-muted">Нет групп</div>';
+        } else {
+            html += '<div class="list-group">';
+            groups.forEach(group => {
+                html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${group.name}</strong>
+                        <small class="text-muted ms-2">${group.description || ''}</small>
+                        <br><small>Пользователей: ${group.user_count}</small>
+                    </div>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="openGroupModal(${group.id})"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-outline-danger" onclick="deleteGroup(${group.id})"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = '<div class="text-danger">Ошибка загрузки групп</div>';
+    }
+}
+
+async function openGroupModal(groupId = null) {
+    const modal = new bootstrap.Modal(document.getElementById('groupModal'));
+    document.getElementById('group-id').value = groupId || '';
+
+    // Загружаем возможные родительские группы (все группы реестра, кроме себя и потомков)
+    const resp = await fetch(`/api/v1/groups/?registry_id=${registryId}&is_deleted=false&limit=200`, { credentials: 'include' });
+    const data = await resp.json();
+    const allGroups = data.results || [];
+    const parentSelect = document.getElementById('group-parent');
+    parentSelect.innerHTML = '<option value="">Нет</option>';
+    allGroups.forEach(g => {
+        if (g.id !== groupId) {
+            parentSelect.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+        }
+    });
+
+    // Загружаем всех пользователей (для выбора)
+    const usersResp = await fetch('/api/v1/users/?is_deleted=false&limit=500', { credentials: 'include' });
+    const usersData = await usersResp.json();
+    const users = usersData.results || [];
+    const usersDiv = document.getElementById('group-users-select');
+    usersDiv.innerHTML = '';
+    users.forEach(user => {
+        const div = document.createElement('div');
+        div.className = 'form-check';
+        div.innerHTML = `
+            <input class="form-check-input user-check" type="checkbox" value="${user.id}" id="user-${user.id}">
+            <label class="form-check-label" for="user-${user.id}">${user.last_name} ${user.first_name} (${user.login})</label>
+        `;
+        usersDiv.appendChild(div);
+    });
+
+    document.getElementById('user-search').value = '';
+    document.getElementById('user-search').addEventListener('input', (e) => {
+        const filter = e.target.value.toLowerCase();
+        document.querySelectorAll('#group-users-select .form-check').forEach(el => {
+            el.style.display = el.querySelector('label').textContent.toLowerCase().includes(filter) ? '' : 'none';
+        });
+    });
+
+    // Блок руководимых реестров – видим только для админов
+    const isStaff = true; // ТЕСТОВОЕ, ПОЗЖЕ ИЗМЕНИТЬ
+    const registriesBlock = document.getElementById('group-owned-registries-block');
+    registriesBlock.style.display = isStaff ? 'block' : 'none';
+    const registriesResp = await fetch('/api/v1/registries/?is_deleted=false&limit=200', { credentials: 'include' });
+    const registriesData = await registriesResp.json();
+    const registries = registriesData.results || [];
+    const registriesDiv = document.getElementById('group-registries-select');
+    registriesDiv.innerHTML = '';
+    registries.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'form-check';
+        div.innerHTML = `
+            <input class="form-check-input registry-check" type="checkbox" value="${r.id}" id="reg-${r.id}">
+            <label class="form-check-label" for="reg-${r.id}">${r.name}</label>
+        `;
+        registriesDiv.appendChild(div);
+    });
+
+    // Если редактирование, заполняем поля
+    if (groupId) {
+        document.getElementById('groupModalTitle').textContent = 'Редактировать группу';
+        const groupResp = await fetch(`/api/v1/groups/${groupId}/`, { credentials: 'include' });
+        const group = await groupResp.json();
+        document.getElementById('group-name').value = group.name;
+        document.getElementById('group-desc').value = group.description || '';
+        if (group.parent_group) parentSelect.value = group.parent_group;
+
+        // Отмечаем пользователей
+        const groupUsersResp = await fetch(`/api/v1/groups/${groupId}/users/`, { credentials: 'include' });
+        const groupUsers = await groupUsersResp.json();
+        // Предполагаем, что ответ содержит массив пользователей
+        (Array.isArray(groupUsers) ? groupUsers : groupUsers.results || []).forEach(u => {
+            const cb = document.getElementById(`user-${u.id}`);
+            if (cb) cb.checked = true;
+        });
+
+        // Отмечаем руководимые реестры (поле owner_of_registries)
+        if (group.owner_of_registries) {
+            group.owner_of_registries.forEach(rId => {
+                const cb = document.getElementById(`reg-${rId}`);
+                if (cb) cb.checked = true;
+            });
+        }
+    } else {
+        document.getElementById('groupModalTitle').textContent = 'Новая группа';
+        document.getElementById('group-name').value = '';
+        document.getElementById('group-desc').value = '';
+        parentSelect.value = '';
+        document.querySelectorAll('#group-users-select input').forEach(cb => cb.checked = false);
+        document.querySelectorAll('#group-registries-select input').forEach(cb => cb.checked = false);
+    }
+    modal.show();
+}
+
+document.getElementById('save-group-btn').addEventListener('click', async function() {
+    const id = document.getElementById('group-id').value;
+    const name = document.getElementById('group-name').value.trim();
+    const description = document.getElementById('group-desc').value.trim();
+    let parent = document.getElementById('group-parent').value;
+    if (parent === '') parent = null; else parent = parseInt(parent);
+    const userIds = Array.from(document.querySelectorAll('.user-check:checked')).map(cb => parseInt(cb.value));
+    const registryIds = Array.from(document.querySelectorAll('.registry-check:checked')).map(cb => parseInt(cb.value));
+
+    const body = {
+        name,
+        description,
+        parent_group_id: parent || null,
+        registry_id: registryId,
+        user_ids: userIds,
+        owner_of_registry_ids: registryIds
+    };
+
+    const url = id ? `/api/v1/groups/${id}/` : '/api/v1/groups/';
+    const method = id ? 'PUT' : 'POST';
+    const resp = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) });
+    if (resp.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('groupModal')).hide();
+        loadGroupsTab(currentSectionId);
+    } else {
+        const err = await resp.json();
+        showError(err.detail || 'Ошибка сохранения группы');
+    }
+});
+
+async function deleteGroup(groupId) {
+    showConfirmDelete('Удалить группу и все связанные права?', async () => {
+        const resp = await fetch(`/api/v1/groups/${groupId}/`, { method: 'DELETE', credentials: 'include' });
+        if (resp.ok) loadGroupsTab(currentSectionId);
+        else showError('Ошибка удаления группы');
+    });
+}
+
+// ===================== ПРАВА =====================
+async function loadRightsTab(sectionId) {
+    const container = document.getElementById('rights-content');
+    container.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Выберите группу</label>
+            <select class="form-select" id="rights-group-select"></select>
+        </div>
+        <div id="ticket-input-block" class="row g-2 align-items-center mb-3" style="display:none;">
+            <div class="col-auto">
+                <input type="text" class="form-control" id="ticket-number" placeholder="Номер тикета (9 цифр)">
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" id="save-rights-btn">Сохранить изменения</button>
+            </div>
+        </div>
+        <div id="rights-matrix"></div>
+    `;
+
+    // Заполняем список групп
+    const groupsResp = await fetch(`/api/v1/groups/?registry_id=${registryId}&is_deleted=false`, { credentials: 'include' });
+    const groupsData = await groupsResp.json();
+    const groups = groupsData.results || [];
+    const select = document.getElementById('rights-group-select');
+    select.innerHTML = '<option value="">-- выберите группу --</option>';
+    groups.forEach(g => {
+        select.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+    });
+
+    document.getElementById('rights-group-select').addEventListener('change', function() {
+        const groupId = this.value;
+        if (groupId) {
+            loadRightsMatrix(sectionId, groupId);
+            document.getElementById('ticket-input-block').style.display = 'block';
+            document.getElementById('save-rights-btn').style.display = 'block';
+        } else {
+            document.getElementById('rights-matrix').innerHTML = '';
+            document.getElementById('ticket-input-block').style.display = 'none';
+            document.getElementById('save-rights-btn').style.display = 'none';
+        }
+    });
+}
+
+async function loadRightsMatrix(sectionId, groupId) {
+    const matrixDiv = document.getElementById('rights-matrix');
+    matrixDiv.innerHTML = 'Загрузка...';
+    try {
+        // 1. Получаем все объекты раздела (с node_name)
+        const objectsResp = await fetch(`/api/v1/objects/?section_id=${sectionId}&is_deleted=false&limit=500`, { credentials: 'include' });
+        const objects = (await objectsResp.json()).results || [];
+
+        // 2. Типы доступа для этих объектов (собираем по объектам)
+        const types = [];
+        for (const obj of objects) {
+            const resp = await fetch(`/api/v1/types/?object_id=${obj.id}&is_deleted=false`, { credentials: 'include' });
+            const tdata = await resp.json();
+            if (tdata.results) types.push(...tdata.results);
+        }
+
+        // 3. Права для данной группы в разделе (фильтр section_id и group_id)
+        const rightsResp = await fetch(`/api/v1/rights/?section_id=${sectionId}&group_id=${groupId}`, { credentials: 'include' });
+        const rights = (await rightsResp.json()).results || [];
+
+        // 4. Запоминаем исходное состояние прав для группы (массив typeId)
+        window._initialRights = rights.map(r => r.access_type);
+
+        // 5. Построение таблицы
+        let html = `<table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Узел</th>
+                    <th>Объект</th>
+                    <th>Путь</th>
+                    <th>Описание</th>
+                    <th>Тип доступа</th>
+                    <th>Назначено</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        for (const obj of objects) {
+            const objTypes = types.filter(t => t.object === obj.id);
+            if (objTypes.length === 0) continue;
+            objTypes.forEach(t => {
+                const rightExists = rights.some(r => r.access_type === t.id && r.group === parseInt(groupId));
+                html += `
+                <tr>
+                    <td>${obj.node_name || '—'}</td>
+                    <td>${obj.name}</td>
+                    <td><code>${obj.resource_path}</code></td>
+                    <td>${obj.description || ''}</td>
+                    <td><span class="badge bg-secondary">${t.template_name}</span></td>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input right-check" data-type-id="${t.id}" ${rightExists ? 'checked' : ''}>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        html += '</tbody></table>';
+        matrixDiv.innerHTML = html;
+    } catch (err) {
+        matrixDiv.innerHTML = '<div class="text-danger">Ошибка загрузки прав</div>';
+    }
+}
+
+document.getElementById('save-rights-btn').addEventListener('click', async function() {
+    const groupId = document.getElementById('rights-group-select').value;
+    const ticket = document.getElementById('ticket-number').value.trim();
+    if (!ticket || !/^\d{9}$/.test(ticket)) {
+        showError('Введите корректный 9-значный номер тикета');
+        return;
+    }
+    const checkboxes = document.querySelectorAll('.right-check');
+    const promises = [];
+    checkboxes.forEach(cb => {
+        const typeId = parseInt(cb.dataset.typeId);
+        const currentlyAssigned = cb.checked;
+    });
+});
+</script>
+{% endblock %}
